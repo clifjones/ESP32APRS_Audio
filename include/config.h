@@ -369,6 +369,7 @@ typedef struct Config_Struct
 	unsigned long uart2_baudrate;
 	int8_t uart2_tx_gpio = -1;
 	int8_t uart2_rx_gpio = -1;
+	int8_t uart2_rts_gpio = -1;
 	// #endif
 
 	bool modbus_enable = false;

@@ -1838,11 +1838,11 @@ void defaultConfig()
     config.uart1_rts_gpio = -1;
 #endif
 
-    // config.uart2_enable = false;
-    // config.uart2_baudrate = 9600;
-    // config.uart2_rx_gpio = 16;
-    // config.uart2_tx_gpio = 17;
-    // config.uart2_rts_gpio = -1;
+    config.uart2_enable = false;
+    config.uart2_baudrate = 9600;
+    config.uart2_rx_gpio = 16;
+    config.uart2_tx_gpio = 17;
+    config.uart2_rts_gpio = -1;
 
     config.modbus_enable = false;
     config.modbus_de_gpio = -1;
@@ -3234,6 +3234,7 @@ void setup()
     Serial.println();
     Serial.println("Start ESP32APRS_Audio V" + String(VERSION));
     Serial.println("Push BOOT after 3 sec for Factory Default config.");
+    Serial.println("SOC_UART_NUM=" + String(SOC_UART_NUM));
 
 // if (!EEPROM.begin(EEPROM_SIZE))
 // {

@@ -2980,63 +2980,63 @@ void handle_mod(AsyncWebServerRequest *request)
 		String html = "OK";
 		request->send(200, "text/html", html);
 	}
-	// else if (request->hasArg("commitUART2"))
-	// {
-	// 	bool En = false;
-	// 	for (uint8_t i = 0; i < request->args(); i++)
-	// 	{
-	// 		// Serial.print("SERVER ARGS ");
-	// 		// Serial.print(request->argName(i));
-	// 		// Serial.print("=");
-	// 		// Serial.println(request->arg(i));
+	else if (request->hasArg("commitUART2"))
+	{
+		bool En = false;
+		for (uint8_t i = 0; i < request->args(); i++)
+		{
+			Serial.print("SERVER ARGS ");
+			Serial.print(request->argName(i));
+			Serial.print("=");
+			Serial.println(request->arg(i));
 
-	// 		if (request->argName(i) == "Enable")
-	// 		{
-	// 			if (request->arg(i) != "")
-	// 			{
-	// 				if (String(request->arg(i)) == "OK")
-	// 					En = true;
-	// 			}
-	// 		}
+			if (request->argName(i) == "Enable")
+			{
+				if (request->arg(i) != "")
+				{
+					if (String(request->arg(i)) == "OK")
+						En = true;
+				}
+			}
 
-	// 	// 	if (request->argName(i) == "baudrate")
-	// 	// 	{
-	// 	// 		if (isValidNumber(request->arg(i)))
-	// 	// 		{
-	// 	// 			config.uart2_baudrate = request->arg(i).toInt();
-	// 	// 		}
-	// 	// 	}
+			if (request->argName(i) == "baudrate")
+			{
+				if (isValidNumber(request->arg(i)))
+				{
+					config.uart2_baudrate = request->arg(i).toInt();
+				}
+			}
 
-	// 	// 	if (request->argName(i) == "rx")
-	// 	// 	{
-	// 	// 		if (isValidNumber(request->arg(i)))
-	// 	// 		{
-	// 	// 			config.uart2_rx_gpio = request->arg(i).toInt();
-	// 	// 		}
-	// 	// 	}
+			if (request->argName(i) == "rx")
+			{
+				if (isValidNumber(request->arg(i)))
+				{
+					config.uart2_rx_gpio = request->arg(i).toInt();
+				}
+			}
 
-	// 	// 	if (request->argName(i) == "tx")
-	// 	// 	{
-	// 	// 		if (isValidNumber(request->arg(i)))
-	// 	// 		{
-	// 	// 			config.uart2_tx_gpio = request->arg(i).toInt();
-	// 	// 		}
-	// 	// 	}
+			if (request->argName(i) == "tx")
+			{
+				if (isValidNumber(request->arg(i)))
+				{
+					config.uart2_tx_gpio = request->arg(i).toInt();
+				}
+			}
 
-	// 	// 	if (request->argName(i) == "rts")
-	// 	// 	{
-	// 	// 		if (isValidNumber(request->arg(i)))
-	// 	// 		{
-	// 	// 			config.uart2_rts_gpio = request->arg(i).toInt();
-	// 	// 		}
-	// 	// 	}
-	// 	// }
+			// if (request->argName(i) == "rts")
+			// {
+			// 	if (isValidNumber(request->arg(i)))
+			// 	{
+			// 		config.uart2_rts_gpio = request->arg(i).toInt();
+			// 	}
+			// }
+		}
 
-	// 	// config.uart2_enable = En;
-	// 	saveConfiguration("/default.cfg", config);
-	// 	String html = "OK";
-	// 	request->send(200, "text/html", html);
-	// }
+		config.uart2_enable = En;
+		saveConfiguration("/default.cfg", config);
+		String html = "OK";
+		request->send(200, "text/html", html);
+	}
 	else if (request->hasArg("commitMODBUS"))
 	{
 		bool En = false;
@@ -3642,10 +3642,10 @@ void handle_mod(AsyncWebServerRequest *request)
 			{
 				config.uart1_enable = false;
 			}
-			// else if (config.ppp_serial == 2)
-			// {
-			// 	config.uart2_enable = false;
-			// }
+			else if (config.ppp_serial == 2)
+			{
+				config.uart2_enable = false;
+			}
 		}
 		String html;
 		if (saveConfiguration("/default.cfg", config))
@@ -3798,57 +3798,57 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "</td></tr></table>\n";
 
 		html += "</form><br />\n";
-		//html += "</td><td width=\"32%\" style=\"border:unset;\">";
+		html += "</td><td width=\"32%\" style=\"border:unset;\">";
 
 		/**************UART2 Modify******************/
-		// html += "<form accept-charset=\"UTF-8\" action=\"#\" class=\"form-horizontal\" id=\"fromUART2\" method=\"post\">\n";
-		// html += "<table>\n";
-		// html += "<th colspan=\"2\"><span><b>UART2 Modify</b></span></th>\n";
-		// html += "<tr>";
+		html += "<form accept-charset=\"UTF-8\" action=\"#\" class=\"form-horizontal\" id=\"fromUART2\" method=\"post\">\n";
+		html += "<table>\n";
+		html += "<th colspan=\"2\"><span><b>UART2 Modify</b></span></th>\n";
+		html += "<tr>";
 
-		// enFlage = "";
-		// if (config.uart2_enable)
-		// 	enFlage = "checked";
-		// html += "<td align=\"right\"><b>Enable</b></td>\n";
-		// html += "<td style=\"text-align: left;\"><label class=\"switch\"><input type=\"checkbox\" name=\"Enable\" value=\"OK\" " + enFlage + "><span class=\"slider round\"></span></label></td>\n";
-		// html += "</tr>\n";
+		enFlage = "";
+		if (config.uart2_enable)
+			enFlage = "checked";
+		html += "<td align=\"right\"><b>Enable</b></td>\n";
+		html += "<td style=\"text-align: left;\"><label class=\"switch\"><input type=\"checkbox\" name=\"Enable\" value=\"OK\" " + enFlage + "><span class=\"slider round\"></span></label></td>\n";
+		html += "</tr>\n";
 
-		// html += "<tr>\n";
-		// html += "<td align=\"right\"><b>RX GPIO:</b></td>\n";
-		// html += "<td style=\"text-align: left;\"><input min=\"-1\" max=\""+String(GPIO_NUM_MAX)+"\" name=\"rx\" type=\"number\" value=\"" + String(config.uart2_rx_gpio) + "\" /></td>\n";
-		// html += "</tr>\n";
+		html += "<tr>\n";
+		html += "<td align=\"right\"><b>RX GPIO:</b></td>\n";
+		html += "<td style=\"text-align: left;\"><input min=\"-1\" max=\""+String(GPIO_NUM_MAX)+"\" name=\"rx\" type=\"number\" value=\"" + String(config.uart2_rx_gpio) + "\" /></td>\n";
+		html += "</tr>\n";
 
-		// html += "<tr>\n";
-		// html += "<td align=\"right\"><b>TX GPIO:</b></td>\n";
-		// html += "<td style=\"text-align: left;\"><input min=\"-1\" max=\""+String(GPIO_NUM_MAX)+"\" name=\"tx\" type=\"number\" value=\"" + String(config.uart2_tx_gpio) + "\" /></td>\n";
-		// html += "</tr>\n";
+		html += "<tr>\n";
+		html += "<td align=\"right\"><b>TX GPIO:</b></td>\n";
+		html += "<td style=\"text-align: left;\"><input min=\"-1\" max=\""+String(GPIO_NUM_MAX)+"\" name=\"tx\" type=\"number\" value=\"" + String(config.uart2_tx_gpio) + "\" /></td>\n";
+		html += "</tr>\n";
 
-		// html += "<tr>\n";
-		// html += "<td align=\"right\"><b>RTS/DE GPIO:</b></td>\n";
-		// html += "<td style=\"text-align: left;\"><input min=\"-1\" max=\""+String(GPIO_NUM_MAX)+"\"  name=\"rts\" type=\"number\" value=\"" + String(config.uart2_rts_gpio) + "\" /></td>\n";
-		// html += "</tr>\n";
+		html += "<tr>\n";
+		html += "<td align=\"right\"><b>RTS/DE GPIO:</b></td>\n";
+		html += "<td style=\"text-align: left;\"><input min=\"-1\" max=\""+String(GPIO_NUM_MAX)+"\"  name=\"rts\" type=\"number\" value=\"" + String(config.uart2_rts_gpio) + "\" /></td>\n";
+		html += "</tr>\n";
 
-		// html += "<tr>\n";
-		// html += "<td align=\"right\"><b>Baudrate:</b></td>\n";
-		// html += "<td style=\"text-align: left;\">\n";
-		// html += "<select name=\"baudrate\" id=\"baudrate\">\n";
-		// for (int i = 0; i < 13; i++)
-		// {
-		// 	if (config.uart2_baudrate == baudrate[i])
-		// 		html += "<option value=\"" + String(baudrate[i]) + "\" selected>" + String(baudrate[i]) + " </option>\n";
-		// 	else
-		// 		html += "<option value=\"" + String(baudrate[i]) + "\" >" + String(baudrate[i]) + " </option>\n";
-		// }
-		// html += "</select> bps\n";
-		// html += "</td>\n";
-		// html += "</tr>\n";
-		// html += "<tr><td colspan=\"2\" align=\"right\">\n";
-		// html += "<input class=\"btn btn-primary\" id=\"submitUART2\" name=\"commitUART2\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
-		// html += "<input type=\"hidden\" name=\"commitUART2\"/>\n";
-		// html += "</td></tr></table>\n";
+		html += "<tr>\n";
+		html += "<td align=\"right\"><b>Baudrate:</b></td>\n";
+		html += "<td style=\"text-align: left;\">\n";
+		html += "<select name=\"baudrate\" id=\"baudrate\">\n";
+		for (int i = 0; i < 13; i++)
+		{
+			if (config.uart2_baudrate == baudrate[i])
+				html += "<option value=\"" + String(baudrate[i]) + "\" selected>" + String(baudrate[i]) + " </option>\n";
+			else
+				html += "<option value=\"" + String(baudrate[i]) + "\" >" + String(baudrate[i]) + " </option>\n";
+		}
+		html += "</select> bps\n";
+		html += "</td>\n";
+		html += "</tr>\n";
+		html += "<tr><td colspan=\"2\" align=\"right\">\n";
+		html += "<input class=\"button\" id=\"submitUART2\" name=\"commitUART2\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
+		html += "<input type=\"hidden\" name=\"commitUART2\"/>\n";
+		html += "</td></tr></table>\n";
 
-		// html += "</form><br />\n";
-		// html += "</td></tr></table>\n";
+		html += "</form><br />\n";
+		html += "</td></tr></table>\n";
 
 		html += "</td><td width=\"32%\" style=\"border:unset;\">";
 
