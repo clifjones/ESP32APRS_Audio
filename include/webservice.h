@@ -111,6 +111,9 @@ extern uint16_t TLM_SEQ;
 extern uint16_t IGATE_TLM_SEQ;
 extern uint16_t DIGI_TLM_SEQ;
 extern unsigned long StandByTick;
+extern SemaphoreHandle_t pkgListMutex;
+extern SemaphoreHandle_t gpsMutex;
+extern SemaphoreHandle_t statusMutex;
 
 #ifdef __cplusplus
 extern "C"
@@ -139,5 +142,6 @@ void handle_ws_gnss(char *nmea);
 void handle_ws_gnss(char *nmea, size_t size);
 String event_lastHeard(bool gethtml=false);
 String event_chatMessage(bool gethtml=false);
+String htmlEncode(const char *s);
 
 #endif
