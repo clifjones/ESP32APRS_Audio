@@ -781,12 +781,14 @@ String getValue(String data, char separator, int index)
 
 boolean isValidNumber(String str)
 {
+    if (str.length() == 0)
+        return false;
     for (int i = 0; i < str.length(); i++)
     {
-        if (isDigit(str.charAt(i)))
-            return true;
+        if (!isDigit(str.charAt(i)))
+            return false;
     }
-    return false;
+    return true;
 }
 
 uint8_t checkSum(uint8_t *ptr, size_t count)

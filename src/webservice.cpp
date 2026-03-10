@@ -75,6 +75,24 @@ void notFound(AsyncWebServerRequest *request)
 	request->send(404, "text/plain", "Not found");
 }
 
+// Escape special HTML characters to prevent XSS when config values are
+// embedded in HTML attribute values or page content.
+static String htmlEncode(const char *s)
+{
+	String out;
+	for (; *s; s++) {
+		switch (*s) {
+			case '&':  out += "&amp;";  break;
+			case '<':  out += "&lt;";   break;
+			case '>':  out += "&gt;";   break;
+			case '"':  out += "&quot;"; break;
+			case '\'': out += "&#39;";  break;
+			default:   out += *s;       break;
+		}
+	}
+	return out;
+}
+
 void handle_logout(AsyncWebServerRequest *request)
 {
 	webString = "Log out";
@@ -348,7 +366,7 @@ void handle_dashboard(AsyncWebServerRequest *request)
 		webString += "</tr>\n";
 		webString += "<tr>\n";
 		webString += "<td>HOST</td>\n";
-		webString += "<td style=\"background: #ffffff;\">" + String(config.aprs_host) + "</td>\n";
+		webString += "<td style=\"background: #ffffff;\">" + htmlEncode(config.aprs_host) + "</td>\n";
 		webString += "</tr>\n";
 		webString += "<tr>\n";
 		webString += "<td>PORT</td>\n";
@@ -2021,7 +2039,7 @@ void handle_vpn(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.wg_public_key, request->arg(i).c_str());
+					strlcpy(config.wg_public_key, request->arg(i).c_str(), sizeof(config.wg_public_key));
 					config.wg_public_key[44] = 0;
 				}
 			}
@@ -2030,7 +2048,7 @@ void handle_vpn(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.wg_private_key, request->arg(i).c_str());
+					strlcpy(config.wg_private_key, request->arg(i).c_str(), sizeof(config.wg_private_key));
 					config.wg_private_key[44] = 0;
 				}
 			}
@@ -2039,7 +2057,7 @@ void handle_vpn(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.wg_peer_address, request->arg(i).c_str());
+					strlcpy(config.wg_peer_address, request->arg(i).c_str(), sizeof(config.wg_peer_address));
 				}
 			}
 
@@ -2047,7 +2065,7 @@ void handle_vpn(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.wg_local_address, request->arg(i).c_str());
+					strlcpy(config.wg_local_address, request->arg(i).c_str(), sizeof(config.wg_local_address));
 				}
 			}
 
@@ -2055,7 +2073,7 @@ void handle_vpn(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.wg_netmask_address, request->arg(i).c_str());
+					strlcpy(config.wg_netmask_address, request->arg(i).c_str(), sizeof(config.wg_netmask_address));
 				}
 			}
 
@@ -2063,7 +2081,7 @@ void handle_vpn(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.wg_gw_address, request->arg(i).c_str());
+					strlcpy(config.wg_gw_address, request->arg(i).c_str(), sizeof(config.wg_gw_address));
 				}
 			}
 		}
@@ -2167,7 +2185,7 @@ void handle_vpn(AsyncWebServerRequest *request)
 
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Server Address</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input  size=\"20\" maxlength=\"32\" id=\"wg_peer_address\" name=\"wg_peer_address\" type=\"text\" value=\"" + String(config.wg_peer_address) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input  size=\"20\" maxlength=\"32\" id=\"wg_peer_address\" name=\"wg_peer_address\" type=\"text\" value=\"" + htmlEncode(config.wg_peer_address) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr>\n";
@@ -2177,27 +2195,27 @@ void handle_vpn(AsyncWebServerRequest *request)
 
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Local Address</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input id=\"wg_local_address\" name=\"wg_local_address\" type=\"text\" value=\"" + String(config.wg_local_address) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input id=\"wg_local_address\" name=\"wg_local_address\" type=\"text\" value=\"" + htmlEncode(config.wg_local_address) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Netmask</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input id=\"wg_netmask_address\" name=\"wg_netmask_address\" type=\"text\" value=\"" + String(config.wg_netmask_address) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input id=\"wg_netmask_address\" name=\"wg_netmask_address\" type=\"text\" value=\"" + htmlEncode(config.wg_netmask_address) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Gateway</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input id=\"wg_gw_address\" name=\"wg_gw_address\" type=\"text\" value=\"" + String(config.wg_gw_address) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input id=\"wg_gw_address\" name=\"wg_gw_address\" type=\"text\" value=\"" + htmlEncode(config.wg_gw_address) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Public Server Key</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input size=\"50\" maxlength=\"44\" id=\"wg_public_key\" name=\"wg_public_key\" type=\"text\" value=\"" + String(config.wg_public_key) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input size=\"50\" maxlength=\"44\" id=\"wg_public_key\" name=\"wg_public_key\" type=\"text\" value=\"" + htmlEncode(config.wg_public_key) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Private Client Key</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input size=\"50\" maxlength=\"44\" id=\"wg_private_key\" name=\"wg_private_key\" type=\"text\" value=\"" + String(config.wg_private_key) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input size=\"50\" maxlength=\"44\" id=\"wg_private_key\" name=\"wg_private_key\" type=\"text\" value=\"" + htmlEncode(config.wg_private_key) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
@@ -2260,7 +2278,7 @@ void handle_mqtt(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.mqtt_host, request->arg(i).c_str());
+					strlcpy(config.mqtt_host, request->arg(i).c_str(), sizeof(config.mqtt_host));
 				}
 			}
 			if (request->argName(i) == "port")
@@ -2274,28 +2292,28 @@ void handle_mqtt(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.mqtt_user, request->arg(i).c_str());
+					strlcpy(config.mqtt_user, request->arg(i).c_str(), sizeof(config.mqtt_user));
 				}
 			}
 			if (request->argName(i) == "pass")
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.mqtt_pass, request->arg(i).c_str());
+					strlcpy(config.mqtt_pass, request->arg(i).c_str(), sizeof(config.mqtt_pass));
 				}
 			}
 			if (request->argName(i) == "topic")
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.mqtt_topic, request->arg(i).c_str());
+					strlcpy(config.mqtt_topic, request->arg(i).c_str(), sizeof(config.mqtt_topic));
 				}
 			}
 			if (request->argName(i) == "subscribe")
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.mqtt_subscribe, request->arg(i).c_str());
+					strlcpy(config.mqtt_subscribe, request->arg(i).c_str(), sizeof(config.mqtt_subscribe));
 				}
 			}
 
@@ -2419,7 +2437,7 @@ void handle_mqtt(AsyncWebServerRequest *request)
 
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Server Address:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input  size=\"30\" maxlength=\"32\" name=\"host\" type=\"text\" value=\"" + String(config.mqtt_host) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input  size=\"30\" maxlength=\"32\" name=\"host\" type=\"text\" value=\"" + htmlEncode(config.mqtt_host) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr>\n";
@@ -2429,17 +2447,17 @@ void handle_mqtt(AsyncWebServerRequest *request)
 
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>User:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input maxlength=\"32\" name=\"user\" type=\"text\" value=\"" + String(config.mqtt_user) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input maxlength=\"32\" name=\"user\" type=\"text\" value=\"" + htmlEncode(config.mqtt_user) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Password:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input size=\"40\" maxlength=\"63\" name=\"pass\" type=\"password\" value=\"" + String(config.mqtt_pass) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input size=\"40\" maxlength=\"63\" name=\"pass\" type=\"password\" value=\"" + htmlEncode(config.mqtt_pass) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Topic:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input size=\"50\" maxlength=\"32\" id=\"topic\" name=\"topic\" type=\"text\" value=\"" + String(config.mqtt_topic) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input size=\"50\" maxlength=\"32\" id=\"topic\" name=\"topic\" type=\"text\" value=\"" + htmlEncode(config.mqtt_topic) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr>\n";
@@ -2481,7 +2499,7 @@ void handle_mqtt(AsyncWebServerRequest *request)
 
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Subscription:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input size=\"50\" maxlength=\"32\" name=\"subscribe\" type=\"text\" value=\"" + String(config.mqtt_subscribe) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input size=\"50\" maxlength=\"32\" name=\"subscribe\" type=\"text\" value=\"" + htmlEncode(config.mqtt_subscribe) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr>\n";
@@ -2603,7 +2621,7 @@ void handle_msg(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.msg_mycall, request->arg(i).c_str());
+					strlcpy(config.msg_mycall, request->arg(i).c_str(), sizeof(config.msg_mycall));
 					config.msg_mycall[9] = 0;
 				}
 			}
@@ -2612,7 +2630,7 @@ void handle_msg(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.msg_key, request->arg(i).c_str());
+					strlcpy(config.msg_key, request->arg(i).c_str(), sizeof(config.msg_key));
 					config.msg_key[32] = 0;
 				}
 			}
@@ -2734,7 +2752,7 @@ void handle_msg(AsyncWebServerRequest *request)
 
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>AES Key:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input  size=\"40\" maxlength=\"33\" name=\"key\" type=\"text\" value=\"" + String(config.msg_key) + "\" /> *<i>ASCII HEX 16Byte</i></td>\n";
+		html += "<td style=\"text-align: left;\"><input  size=\"40\" maxlength=\"33\" name=\"key\" type=\"text\" value=\"" + htmlEncode(config.msg_key) + "\" /> *<i>ASCII HEX 16Byte</i></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr>\n";
@@ -2828,7 +2846,7 @@ void handle_mod(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.gnss_at_command, request->arg(i).c_str());
+					strlcpy(config.gnss_at_command, request->arg(i).c_str(), sizeof(config.gnss_at_command));
 				}
 				else
 				{
@@ -2840,7 +2858,7 @@ void handle_mod(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.gnss_tcp_host, request->arg(i).c_str());
+					strlcpy(config.gnss_tcp_host, request->arg(i).c_str(), sizeof(config.gnss_tcp_host));
 				}
 			}
 
@@ -3555,7 +3573,7 @@ void handle_mod(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.ppp_apn, request->arg(i).c_str());
+					strlcpy(config.ppp_apn, request->arg(i).c_str(), sizeof(config.ppp_apn));
 				}
 			}
 
@@ -3563,7 +3581,7 @@ void handle_mod(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.ppp_pin, request->arg(i).c_str());
+					strlcpy(config.ppp_pin, request->arg(i).c_str(), sizeof(config.ppp_pin));
 				}
 			}
 
@@ -4156,10 +4174,10 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "</tr>\n";
 
 		html += "<td align=\"right\"><b>AT Command:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input maxlength=\"30\" size=\"20\" id=\"atc\" name=\"atc\" type=\"text\" value=\"" + String(config.gnss_at_command) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input maxlength=\"30\" size=\"20\" id=\"atc\" name=\"atc\" type=\"text\" value=\"" + htmlEncode(config.gnss_at_command) + "\" /></td>\n";
 		html += "</tr>\n";
 		html += "<td align=\"right\"><b>TCP Host:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input maxlength=\"20\" size=\"15\" id=\"Host\" name=\"Host\" type=\"text\" value=\"" + String(config.gnss_tcp_host) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input maxlength=\"20\" size=\"15\" id=\"Host\" name=\"Host\" type=\"text\" value=\"" + htmlEncode(config.gnss_tcp_host) + "\" /></td>\n";
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>TCP Port:</b></td>\n";
@@ -4496,7 +4514,7 @@ void handle_system(AsyncWebServerRequest *request)
 				if (request->arg(i) != "")
 				{
 					// Serial.println("WEB Config NTP");
-					strcpy(config.host_name, request->arg(i).c_str());
+					strlcpy(config.host_name, request->arg(i).c_str(), sizeof(config.host_name));
 				}
 				break;
 			}
@@ -4526,7 +4544,7 @@ void handle_system(AsyncWebServerRequest *request)
 				if (request->arg(i) != "")
 				{
 					// Serial.println("WEB Config NTP");
-					strcpy(config.ntp_host, request->arg(i).c_str());
+					strlcpy(config.ntp_host, request->arg(i).c_str(), sizeof(config.ntp_host));
 					configTime(3600 * config.timeZone, 0, config.ntp_host);
 				}
 				break;
@@ -4670,14 +4688,14 @@ void handle_system(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.http_username, request->arg(i).c_str());
+					strlcpy(config.http_username, request->arg(i).c_str(), sizeof(config.http_username));
 				}
 			}
 			if (request->argName(i) == "webauth_pass")
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.http_password, request->arg(i).c_str());
+					strlcpy(config.http_password, request->arg(i).c_str(), sizeof(config.http_password));
 				}
 			}
 		}
@@ -4705,28 +4723,28 @@ void handle_system(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.path[0], request->arg(i).c_str());
+					strlcpy(config.path[0], request->arg(i).c_str(), sizeof(config.path[0]));
 				}
 			}
 			if (request->argName(i) == "path2")
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.path[1], request->arg(i).c_str());
+					strlcpy(config.path[1], request->arg(i).c_str(), sizeof(config.path[1]));
 				}
 			}
 			if (request->argName(i) == "path3")
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.path[1], request->arg(i).c_str());
+					strlcpy(config.path[1], request->arg(i).c_str(), sizeof(config.path[1]));
 				}
 			}
 			if (request->argName(i) == "path4")
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.path[3], request->arg(i).c_str());
+					strlcpy(config.path[3], request->arg(i).c_str(), sizeof(config.path[3]));
 				}
 			}
 		}
@@ -5296,11 +5314,11 @@ void handle_system(AsyncWebServerRequest *request)
 		html += "<th colspan=\"2\"><span><b>Web Authentication</b></span></th>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Web USER:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input size=\"32\" maxlength=\"32\" class=\"form-control\" name=\"webauth_user\" type=\"text\" value=\"" + String(config.http_username) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input size=\"32\" maxlength=\"32\" class=\"form-control\" name=\"webauth_user\" type=\"text\" value=\"" + htmlEncode(config.http_username) + "\" /></td>\n";
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Web PASSWORD:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input size=\"63\" maxlength=\"63\" class=\"form-control\" name=\"webauth_pass\" type=\"password\" value=\"" + String(config.http_password) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input size=\"63\" maxlength=\"63\" class=\"form-control\" name=\"webauth_pass\" type=\"password\" value=\"" + htmlEncode(config.http_password) + "\" /></td>\n";
 		html += "</tr>\n";
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitWebAuth'  name=\"commit\"> Apply Change </button></div>\n";
@@ -5724,7 +5742,7 @@ void handle_igate(AsyncWebServerRequest *request)
 					String name = request->arg(i);
 					name.trim();
 					name.toUpperCase();
-					strcpy(config.aprs_mycall, name.c_str());
+					strlcpy(config.aprs_mycall, name.c_str(), sizeof(config.aprs_mycall));
 				}
 			}
 			if (request->argName(i) == "igateObject")
@@ -5733,7 +5751,7 @@ void handle_igate(AsyncWebServerRequest *request)
 				{
 					String name = request->arg(i);
 					name.trim();
-					strcpy(config.igate_object, name.c_str());
+					strlcpy(config.igate_object, name.c_str(), sizeof(config.igate_object));
 				}
 				else
 				{
@@ -5818,7 +5836,7 @@ void handle_igate(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.aprs_host, request->arg(i).c_str());
+					strlcpy(config.aprs_host, request->arg(i).c_str(), sizeof(config.aprs_host));
 				}
 			}
 			if (request->argName(i) == "aprsPort")
@@ -5833,7 +5851,7 @@ void handle_igate(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.aprs_filter, request->arg(i).c_str());
+					strlcpy(config.aprs_filter, request->arg(i).c_str(), sizeof(config.aprs_filter));
 				}
 			}
 			if (request->argName(i) == "igatePath")
@@ -5848,7 +5866,7 @@ void handle_igate(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.igate_comment, request->arg(i).c_str());
+					strlcpy(config.igate_comment, request->arg(i).c_str(), sizeof(config.igate_comment));
 				}
 				else
 				{
@@ -5859,7 +5877,7 @@ void handle_igate(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.igate_status, request->arg(i).c_str());
+					strlcpy(config.igate_status, request->arg(i).c_str(), sizeof(config.igate_status));
 				}
 				else
 				{
@@ -5870,7 +5888,7 @@ void handle_igate(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.igate_phg, request->arg(i).c_str());
+					strlcpy(config.igate_phg, request->arg(i).c_str(), sizeof(config.igate_phg));
 				}
 			}
 
@@ -5945,7 +5963,7 @@ void handle_igate(AsyncWebServerRequest *request)
 				{
 					if (request->arg(i) != "")
 					{
-						strcpy(config.igate_tlm_PARM[x], request->arg(i).c_str());
+						strlcpy(config.igate_tlm_PARM[x], request->arg(i).c_str(), sizeof(config.igate_tlm_PARM[x]));
 					}
 				}
 				arg = "unit" + String(x);
@@ -5953,7 +5971,7 @@ void handle_igate(AsyncWebServerRequest *request)
 				{
 					if (request->arg(i) != "")
 					{
-						strcpy(config.igate_tlm_UNIT[x], request->arg(i).c_str());
+						strlcpy(config.igate_tlm_UNIT[x], request->arg(i).c_str(), sizeof(config.igate_tlm_UNIT[x]));
 					}
 				}
 				arg = "precision" + String(x);
@@ -6273,7 +6291,7 @@ void handle_igate(AsyncWebServerRequest *request)
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Station Callsign:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input maxlength=\"7\" size=\"6\" id=\"myCall\" name=\"myCall\" type=\"text\" value=\"" + String(config.aprs_mycall) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input maxlength=\"7\" size=\"6\" id=\"myCall\" name=\"myCall\" type=\"text\" value=\"" + htmlEncode(config.aprs_mycall) + "\" /></td>\n";
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Station SSID:</b></td>\n";
@@ -6325,7 +6343,7 @@ void handle_igate(AsyncWebServerRequest *request)
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Server Host:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input maxlength=\"20\" size=\"20\" id=\"aprsHost\" name=\"aprsHost\" type=\"text\" value=\"" + String(config.aprs_host) + "\" /> *APRS-IS by T2THAI at <a href=\"http://aprs.dprns.com:14501\" target=\"_t2thai\">aprs.dprns.com:14580</a>,CBAPRS at <a href=\"http://aprs.dprns.com:24501\" target=\"_t2thai\">aprs.dprns.com:24580</a></td>\n";
+		html += "<td style=\"text-align: left;\"><input maxlength=\"20\" size=\"20\" id=\"aprsHost\" name=\"aprsHost\" type=\"text\" value=\"" + htmlEncode(config.aprs_host) + "\" /> *APRS-IS by T2THAI at <a href=\"http://aprs.dprns.com:14501\" target=\"_t2thai\">aprs.dprns.com:14580</a>,CBAPRS at <a href=\"http://aprs.dprns.com:24501\" target=\"_t2thai\">aprs.dprns.com:24580</a></td>\n";
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Server Port:</b></td>\n";
@@ -6333,7 +6351,7 @@ void handle_igate(AsyncWebServerRequest *request)
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Server Filter:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input maxlength=\"30\" size=\"30\" id=\"aprsFilter\" name=\"aprsFilter\" type=\"text\" value=\"" + String(config.aprs_filter) + "\" /> *Filter: <a target=\"_blank\" href=\"http://www.aprs-is.net/javAPRSFilter.aspx\">http://www.aprs-is.net/javAPRSFilter.aspx</a></td>\n";
+		html += "<td style=\"text-align: left;\"><input maxlength=\"30\" size=\"30\" id=\"aprsFilter\" name=\"aprsFilter\" type=\"text\" value=\"" + htmlEncode(config.aprs_filter) + "\" /> *Filter: <a target=\"_blank\" href=\"http://www.aprs-is.net/javAPRSFilter.aspx\">http://www.aprs-is.net/javAPRSFilter.aspx</a></td>\n";
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Text Comment:</b></td>\n";
@@ -6713,7 +6731,7 @@ void handle_digi(AsyncWebServerRequest *request)
 					String name = request->arg(i);
 					name.trim();
 					name.toUpperCase();
-					strcpy(config.digi_mycall, name.c_str());
+					strlcpy(config.digi_mycall, name.c_str(), sizeof(config.digi_mycall));
 				}
 			}
 			if (request->argName(i) == "mySSID")
@@ -6810,7 +6828,7 @@ void handle_digi(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.digi_comment, request->arg(i).c_str());
+					strlcpy(config.digi_comment, request->arg(i).c_str(), sizeof(config.digi_comment));
 				}
 				else
 				{
@@ -6821,14 +6839,14 @@ void handle_digi(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.digi_phg, request->arg(i).c_str());
+					strlcpy(config.digi_phg, request->arg(i).c_str(), sizeof(config.digi_phg));
 				}
 			}
 			if (request->argName(i) == "digiStatus")
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.digi_status, request->arg(i).c_str());
+					strlcpy(config.digi_status, request->arg(i).c_str(), sizeof(config.digi_status));
 				}
 			}
 			if (request->argName(i) == "digiPos2RF")
@@ -6965,7 +6983,7 @@ void handle_digi(AsyncWebServerRequest *request)
 				{
 					if (request->arg(i) != "")
 					{
-						strcpy(config.digi_tlm_PARM[x], request->arg(i).c_str());
+						strlcpy(config.digi_tlm_PARM[x], request->arg(i).c_str(), sizeof(config.digi_tlm_PARM[x]));
 					}
 				}
 				arg = "unit" + String(x);
@@ -6973,7 +6991,7 @@ void handle_digi(AsyncWebServerRequest *request)
 				{
 					if (request->arg(i) != "")
 					{
-						strcpy(config.digi_tlm_UNIT[x], request->arg(i).c_str());
+						strlcpy(config.digi_tlm_UNIT[x], request->arg(i).c_str(), sizeof(config.digi_tlm_UNIT[x]));
 					}
 				}
 				arg = "precision" + String(x);
@@ -7421,7 +7439,7 @@ void handle_wx(AsyncWebServerRequest *request)
 				{
 					String name = request->arg(i);
 					name.trim();
-					strcpy(config.wx_object, name.c_str());
+					strlcpy(config.wx_object, name.c_str(), sizeof(config.wx_object));
 				}
 				else
 				{
@@ -7435,7 +7453,7 @@ void handle_wx(AsyncWebServerRequest *request)
 					String name = request->arg(i);
 					name.trim();
 					name.toUpperCase();
-					strcpy(config.wx_mycall, name.c_str());
+					strlcpy(config.wx_mycall, name.c_str(), sizeof(config.wx_mycall));
 				}
 			}
 			if (request->argName(i) == "mySSID")
@@ -7510,7 +7528,7 @@ void handle_wx(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.wx_comment, request->arg(i).c_str());
+					strlcpy(config.wx_comment, request->arg(i).c_str(), sizeof(config.wx_comment));
 				}
 				else
 				{
@@ -7854,7 +7872,7 @@ void handle_tlm(AsyncWebServerRequest *request)
 					String name = request->arg(i);
 					name.trim();
 					name.toUpperCase();
-					strcpy(config.tlm0_mycall, name.c_str());
+					strlcpy(config.tlm0_mycall, name.c_str(), sizeof(config.tlm0_mycall));
 				}
 			}
 			if (request->argName(i) == "mySSID")
@@ -7896,7 +7914,7 @@ void handle_tlm(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.tlm0_comment, request->arg(i).c_str());
+					strlcpy(config.tlm0_comment, request->arg(i).c_str(), sizeof(config.tlm0_comment));
 				}
 				else
 				{
@@ -7932,7 +7950,7 @@ void handle_tlm(AsyncWebServerRequest *request)
 				{
 					if (request->arg(i) != "")
 					{
-						strcpy(config.tlm0_PARM[x], request->arg(i).c_str());
+						strlcpy(config.tlm0_PARM[x], request->arg(i).c_str(), sizeof(config.tlm0_PARM[x]));
 					}
 				}
 				arg = "unit" + String(x);
@@ -7940,7 +7958,7 @@ void handle_tlm(AsyncWebServerRequest *request)
 				{
 					if (request->arg(i) != "")
 					{
-						strcpy(config.tlm0_UNIT[x], request->arg(i).c_str());
+						strlcpy(config.tlm0_UNIT[x], request->arg(i).c_str(), sizeof(config.tlm0_UNIT[x]));
 					}
 				}
 				if (x < 5)
@@ -8247,7 +8265,7 @@ void handle_sensor(AsyncWebServerRequest *request)
 				{
 					if (request->arg(i) != "")
 					{
-						strcpy(config.sensor[x].parm, request->arg(i).c_str());
+						strlcpy(config.sensor[x].parm, request->arg(i).c_str(), sizeof(config.sensor[x].parm));
 					}
 				}
 				arg = "unit" + String(x);
@@ -8255,7 +8273,7 @@ void handle_sensor(AsyncWebServerRequest *request)
 				{
 					if (request->arg(i) != "")
 					{
-						strcpy(config.sensor[x].unit, request->arg(i).c_str());
+						strlcpy(config.sensor[x].unit, request->arg(i).c_str(), sizeof(config.sensor[x].unit));
 					}
 				}
 				for (int y = 0; y < 3; y++)
@@ -8682,7 +8700,7 @@ void handle_tracker(AsyncWebServerRequest *request)
 					String name = request->arg(i);
 					name.trim();
 					name.toUpperCase();
-					strcpy(config.trk_mycall, name.c_str());
+					strlcpy(config.trk_mycall, name.c_str(), sizeof(config.trk_mycall));
 				}
 			}
 			if (request->argName(i) == "trackerObject")
@@ -8691,7 +8709,7 @@ void handle_tracker(AsyncWebServerRequest *request)
 				{
 					String name = request->arg(i);
 					name.trim();
-					strcpy(config.trk_item, name.c_str());
+					strlcpy(config.trk_item, name.c_str(), sizeof(config.trk_item));
 				}
 				else
 				{
@@ -8869,7 +8887,7 @@ void handle_tracker(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.trk_comment, request->arg(i).c_str());
+					strlcpy(config.trk_comment, request->arg(i).c_str(), sizeof(config.trk_comment));
 				}
 				else
 				{
@@ -8880,7 +8898,7 @@ void handle_tracker(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.trk_status, request->arg(i).c_str());
+					strlcpy(config.trk_status, request->arg(i).c_str(), sizeof(config.trk_status));
 				}
 				else
 				{
@@ -8934,7 +8952,7 @@ void handle_tracker(AsyncWebServerRequest *request)
 				{
 					if (request->arg(i) != "")
 					{
-						strcpy(config.trk_tlm_PARM[x], request->arg(i).c_str());
+						strlcpy(config.trk_tlm_PARM[x], request->arg(i).c_str(), sizeof(config.trk_tlm_PARM[x]));
 					}
 				}
 				arg = "unit" + String(x);
@@ -8942,7 +8960,7 @@ void handle_tracker(AsyncWebServerRequest *request)
 				{
 					if (request->arg(i) != "")
 					{
-						strcpy(config.trk_tlm_UNIT[x], request->arg(i).c_str());
+						strlcpy(config.trk_tlm_UNIT[x], request->arg(i).c_str(), sizeof(config.trk_tlm_UNIT[x]));
 					}
 				}
 				arg = "precision" + String(x);
@@ -9374,14 +9392,14 @@ void handle_wireless(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.wifi_ap_ssid, request->arg(i).c_str());
+					strlcpy(config.wifi_ap_ssid, request->arg(i).c_str(), sizeof(config.wifi_ap_ssid));
 				}
 			}
 			if (request->argName(i) == "wifi_passAP")
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.wifi_ap_pass, request->arg(i).c_str());
+					strlcpy(config.wifi_ap_pass, request->arg(i).c_str(), sizeof(config.wifi_ap_pass));
 				}
 			}
 		}
@@ -9442,7 +9460,7 @@ void handle_wireless(AsyncWebServerRequest *request)
 				{
 					if (request->arg(i) != "")
 					{
-						strcpy(config.wifi_sta[n].wifi_ssid, request->arg(i).c_str());
+						strlcpy(config.wifi_sta[n].wifi_ssid, request->arg(i).c_str(), sizeof(config.wifi_sta[n].wifi_ssid));
 					}
 				}
 				namePASS = "wifi_pass" + String(n);
@@ -9450,7 +9468,7 @@ void handle_wireless(AsyncWebServerRequest *request)
 				{
 					if (request->arg(i) != "")
 					{
-						strcpy(config.wifi_sta[n].wifi_pass, request->arg(i).c_str());
+						strlcpy(config.wifi_sta[n].wifi_pass, request->arg(i).c_str(), sizeof(config.wifi_sta[n].wifi_pass));
 					}
 				}
 			}
@@ -9507,28 +9525,28 @@ void handle_wireless(AsyncWebServerRequest *request)
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.bt_name, request->arg(i).c_str());
+					strlcpy(config.bt_name, request->arg(i).c_str(), sizeof(config.bt_name));
 				}
 			}
 			if (request->argName(i) == "bt_uuid")
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.bt_uuid, request->arg(i).c_str());
+					strlcpy(config.bt_uuid, request->arg(i).c_str(), sizeof(config.bt_uuid));
 				}
 			}
 			if (request->argName(i) == "bt_uuid_rx")
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.bt_uuid_rx, request->arg(i).c_str());
+					strlcpy(config.bt_uuid_rx, request->arg(i).c_str(), sizeof(config.bt_uuid_rx));
 				}
 			}
 			if (request->argName(i) == "bt_uuid_tx")
 			{
 				if (request->arg(i) != "")
 				{
-					strcpy(config.bt_uuid_tx, request->arg(i).c_str());
+					strlcpy(config.bt_uuid_tx, request->arg(i).c_str(), sizeof(config.bt_uuid_tx));
 				}
 			}
 			if (request->argName(i) == "bt_mode")
@@ -9657,11 +9675,11 @@ void handle_wireless(AsyncWebServerRequest *request)
 			html += "</tr>\n";
 			html += "<tr>\n";
 			html += "<td align=\"right\"><b>WiFi SSID:</b></td>\n";
-			html += "<td style=\"text-align: left;\"><input size=\"32\" maxlength=\"32\" name=\"wifi_ssid" + String(n) + "\" type=\"text\" value=\"" + String(config.wifi_sta[n].wifi_ssid) + "\" /></td>\n";
+			html += "<td style=\"text-align: left;\"><input size=\"32\" maxlength=\"32\" name=\"wifi_ssid" + String(n) + "\" type=\"text\" value=\"" + htmlEncode(config.wifi_sta[n].wifi_ssid) + "\" /></td>\n";
 			html += "</tr>\n";
 			html += "<tr>\n";
 			html += "<td align=\"right\"><b>WiFi PASSWORD:</b></td>\n";
-			html += "<td style=\"text-align: left;\"><input size=\"63\" maxlength=\"63\" name=\"wifi_pass" + String(n) + "\" type=\"password\" value=\"" + String(config.wifi_sta[n].wifi_pass) + "\" /></td>\n";
+			html += "<td style=\"text-align: left;\"><input size=\"63\" maxlength=\"63\" name=\"wifi_pass" + String(n) + "\" type=\"password\" value=\"" + htmlEncode(config.wifi_sta[n].wifi_pass) + "\" /></td>\n";
 			html += "</tr>\n";
 			html += "</tr></table></fieldset>\n";
 			html += "</td></tr>\n";
