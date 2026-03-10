@@ -74,60 +74,38 @@ int pkgListOld()
 
 void sort(pkgListType a[], int size)
 {
-    pkgListType t;
-    char *ptr1;
-    char *ptr2;
-    char *ptr3;
-    ptr1 = (char *)&t;
-#ifdef BOARD_HAS_PSRAM
-    while (psramBusy)
-        delay(1);
-    psramBusy = true;
-#endif
+    xSemaphoreTakeRecursive(pkgListMutex, portMAX_DELAY);
     for (int i = 0; i < (size - 1); i++)
     {
         for (int o = 0; o < (size - (i + 1)); o++)
         {
             if (a[o].time < a[o + 1].time)
             {
-                ptr2 = (char *)&a[o];
-                ptr3 = (char *)&a[o + 1];
-                memcpy(ptr1, ptr2, sizeof(pkgListType));
-                memcpy(ptr2, ptr3, sizeof(pkgListType));
-                memcpy(ptr3, ptr1, sizeof(pkgListType));
+                pkgListType t = a[o];
+                a[o] = a[o + 1];
+                a[o + 1] = t;
             }
         }
     }
-    psramBusy = false;
+    xSemaphoreGiveRecursive(pkgListMutex);
 }
 
 void sortPkgDesc(pkgListType a[], int size)
 {
-    pkgListType t;
-    char *ptr1;
-    char *ptr2;
-    char *ptr3;
-    ptr1 = (char *)&t;
-#ifdef BOARD_HAS_PSRAM
-    while (psramBusy)
-        delay(1);
-    psramBusy = true;
-#endif
+    xSemaphoreTakeRecursive(pkgListMutex, portMAX_DELAY);
     for (int i = 0; i < (size - 1); i++)
     {
         for (int o = 0; o < (size - (i + 1)); o++)
         {
             if (a[o].pkg < a[o + 1].pkg)
             {
-                ptr2 = (char *)&a[o];
-                ptr3 = (char *)&a[o + 1];
-                memcpy(ptr1, ptr2, sizeof(pkgListType));
-                memcpy(ptr2, ptr3, sizeof(pkgListType));
-                memcpy(ptr3, ptr1, sizeof(pkgListType));
+                pkgListType t = a[o];
+                a[o] = a[o + 1];
+                a[o + 1] = t;
             }
         }
     }
-    psramBusy = false;
+    xSemaphoreGiveRecursive(pkgListMutex);
 }
 
 uint16_t pkgType(const char *raw)
@@ -241,15 +219,11 @@ uint16_t pkgType(const char *raw)
 pkgListType getPkgList(int idx)
 {
     pkgListType ret;
-#ifdef BOARD_HAS_PSRAM
-    while (psramBusy)
-        delay(1);
-    psramBusy = true;
-#endif
+    xSemaphoreTakeRecursive(pkgListMutex, portMAX_DELAY);
     memset(&ret, 0, sizeof(pkgListType));
     if (idx < PKGLISTSIZE)
         memcpy(&ret, &pkgList[idx], sizeof(pkgListType));
-    psramBusy = false;
+    xSemaphoreGiveRecursive(pkgListMutex);
     return ret;
 }
 
@@ -279,11 +253,6 @@ int pkgListUpdate(char *call, char *raw, uint16_t type, bool channel, uint16_t a
     // strncpy(callsign, call, sz);
     memcpy(callsign, call, sz);
 
-#ifdef BOARD_HAS_PSRAM
-    while (psramBusy)
-        delay(1);
-    psramBusy = true;
-#endif
     int i = -1;
 
     memset(object, 0, sizeof(object));
@@ -336,7 +305,6 @@ int pkgListUpdate(char *call, char *raw, uint16_t type, bool channel, uint16_t a
 
     if (i > PKGLISTSIZE)
     {
-        psramBusy = false;
         xSemaphoreGiveRecursive(pkgListMutex);
         return -1;
     }
@@ -386,7 +354,6 @@ int pkgListUpdate(char *call, char *raw, uint16_t type, bool channel, uint16_t a
         i = pkgListOld(); // Search free in array
         if (i > PKGLISTSIZE || i < 0)
         {
-            psramBusy = false;
             xSemaphoreGiveRecursive(pkgListMutex);
             return -1;
         }
@@ -438,7 +405,6 @@ int pkgListUpdate(char *call, char *raw, uint16_t type, bool channel, uint16_t a
             }
         }
     }
-    psramBusy = false;
     lastHeard_Flag = true;
     lastHeardTimeout = millis() + 1000;
     xSemaphoreGiveRecursive(pkgListMutex);
