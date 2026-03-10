@@ -74,7 +74,7 @@ int digiProcess(AX25Msg &Packet)
                     for (; j >= idx; j--)
                     {
                         int n = j + 1;
-                        strcpy(&Packet.rpt_list[n].call[0], &Packet.rpt_list[j].call[0]);
+                        strlcpy(&Packet.rpt_list[n].call[0], &Packet.rpt_list[j].call[0], sizeof(Packet.rpt_list[n].call));
                         Packet.rpt_list[n].ssid = Packet.rpt_list[j].ssid;
                         if (Packet.rpt_flags & (1 << j))
                             Packet.rpt_flags |= (1 << n);
@@ -84,7 +84,7 @@ int digiProcess(AX25Msg &Packet)
 
                     // Add new part
                     Packet.rpt_count += 1;
-                    strcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0]);
+                    strlcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0], sizeof(Packet.rpt_list[idx].call));
                     Packet.rpt_list[idx].ssid = config.digi_ssid;
                     Packet.rpt_flags |= (1 << idx);
                     return 2;
@@ -95,7 +95,7 @@ int digiProcess(AX25Msg &Packet)
             else
             {
                 idx = 0;
-                strcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0]);
+                strlcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0], sizeof(Packet.rpt_list[idx].call));
                 Packet.rpt_list[idx].ssid = config.digi_ssid;
                 Packet.rpt_flags |= (1 << idx);
                 Packet.rpt_count += 1;
@@ -149,7 +149,7 @@ int digiProcess(AX25Msg &Packet)
                     ctmp = 0;
                 if (ctmp == 0)
                 {
-                    strcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0]);
+                    strlcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0], sizeof(Packet.rpt_list[idx].call));
                     Packet.rpt_list[idx].ssid = config.digi_ssid;
                     Packet.rpt_flags |= (1 << idx);
                     j = 2;
@@ -166,7 +166,7 @@ int digiProcess(AX25Msg &Packet)
             else
             {
                 j = 2;
-                strcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0]);
+                strlcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0], sizeof(Packet.rpt_list[idx].call));
                 Packet.rpt_list[idx].ssid = config.digi_ssid;
                 Packet.rpt_flags |= (1 << idx);
                 break;
@@ -183,7 +183,7 @@ int digiProcess(AX25Msg &Packet)
                 ctmp = 0;
             if (ctmp == 0)
             {
-                strcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0]);
+                strlcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0], sizeof(Packet.rpt_list[idx].call));
                 Packet.rpt_list[idx].ssid = config.digi_ssid;
                 Packet.rpt_flags |= (1 << idx);
                 j = 2;
@@ -200,7 +200,7 @@ int digiProcess(AX25Msg &Packet)
                 for (; j >= idx; j--)
                 {
                     int n = j + 1;
-                    strcpy(&Packet.rpt_list[n].call[0], &Packet.rpt_list[j].call[0]);
+                    strlcpy(&Packet.rpt_list[n].call[0], &Packet.rpt_list[j].call[0], sizeof(Packet.rpt_list[n].call));
                     Packet.rpt_list[n].ssid = Packet.rpt_list[j].ssid;
                     if (Packet.rpt_flags & (1 << j))
                         Packet.rpt_flags |= (1 << n);
@@ -212,7 +212,7 @@ int digiProcess(AX25Msg &Packet)
 
                 // Add new part
                 Packet.rpt_count += 1;
-                strcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0]);
+                strlcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0], sizeof(Packet.rpt_list[idx].call));
                 Packet.rpt_list[idx].ssid = config.digi_ssid;
                 Packet.rpt_flags |= (1 << idx);
                 j = 2;
@@ -230,7 +230,7 @@ int digiProcess(AX25Msg &Packet)
         else if (!strncmp(&Packet.rpt_list[idx].call[0], "RELAY", 5))
         {
             j = 2;
-            strcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0]);
+            strlcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0], sizeof(Packet.rpt_list[idx].call));
             Packet.rpt_list[idx].ssid = config.digi_ssid;
             Packet.rpt_flags |= (1 << idx);
             break;
@@ -238,7 +238,7 @@ int digiProcess(AX25Msg &Packet)
         else if (!strncmp(&Packet.rpt_list[idx].call[0], "GATE", 4))
         {
             j = 2;
-            strcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0]);
+            strlcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0], sizeof(Packet.rpt_list[idx].call));
             Packet.rpt_list[idx].ssid = config.digi_ssid;
             Packet.rpt_flags |= (1 << idx);
             break;
@@ -246,7 +246,7 @@ int digiProcess(AX25Msg &Packet)
         else if (!strncmp(&Packet.rpt_list[idx].call[0], "ECHO", 4))
         {
             j = 2;
-            strcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0]);
+            strlcpy(&Packet.rpt_list[idx].call[0], &config.digi_mycall[0], sizeof(Packet.rpt_list[idx].call));
             Packet.rpt_list[idx].ssid = config.digi_ssid;
             Packet.rpt_flags |= (1 << idx);
             break;

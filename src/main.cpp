@@ -252,8 +252,8 @@ void pushTxDisp(uint8_t ch, const char *name, char *info)
     txDisp pkg;
 
     pkg.tx_ch = ch;
-    strcpy(pkg.name, name);
-    strcpy(pkg.info, info);
+    strlcpy(pkg.name, name, sizeof(pkg.name));
+    strlcpy(pkg.info, info, sizeof(pkg.info));
     queTxDisp.push(&pkg); // ใส่แพ็จเก็จจาก TNC ลงคิวบัพเฟอร์
 }
 #endif
@@ -4586,7 +4586,7 @@ String sendIsAckMsg(String toCallSign, int msgId)
     int i;
     memset(&call[0], 0, 11);
     sprintf(call, "%s-%d", config.aprs_mycall, config.aprs_ssid);
-    strcpy(&call[0], toCallSign.c_str());
+    strlcpy(&call[0], toCallSign.c_str(), sizeof(call));
     i = strlen(call);
     for (; i < 9; i++)
         call[i] = 0x20;
@@ -5626,8 +5626,8 @@ void taskSerial(void *pvParameters)
                 if ((src_call != "") && (src_call.length() < 10) && (raw.length() < sizeof(rawP)))
                 {
                     memset(call, 0, sizeof(call));
-                    strcpy(call, src_call.c_str());
-                    strcpy(rawP, raw.c_str());
+                    strlcpy(call, src_call.c_str(), sizeof(call));
+                    strlcpy(rawP, raw.c_str(), sizeof(rawP));
                     uint16_t type = pkgType((const char *)rawP);
                     pkgListUpdate(call, rawP, type, 1, -1);
                     if (config.rf2inet && aprsClient.connected())
@@ -5701,9 +5701,9 @@ void taskSerial(void *pvParameters)
                             if ((src_call != "") && (src_call.length() < 11) && (raw.length() < sizeof(rawP)))
                             {
                                 memset(call, 0, sizeof(call));
-                                strcpy(call, src_call.c_str());
+                                strlcpy(call, src_call.c_str(), sizeof(call));
                                 memset(rawP, 0, sizeof(rawP));
-                                strcpy(rawP, raw.c_str());
+                                strlcpy(rawP, raw.c_str(), sizeof(rawP));
                                 log_d("Yaesu Packet: CallSign:%s RAW:%s", call, rawP);
                                 // String hstr="";
                                 // for(int i=0;i<raw.length();i++){
@@ -8640,7 +8640,7 @@ void dispWindow(String line, uint8_t mode, bool filter)
                 if (idx > -1)
                 {
                     Telemetry[idx].time = now();
-                    strcpy(Telemetry[idx].callsign, (char *)src_call.c_str());
+                    strlcpy(Telemetry[idx].callsign, src_call.c_str(), sizeof(Telemetry[idx].callsign));
 
                     // for (int i = 0; i < 3; i++) Telemetry[idx].UNIT[i][5] = 0;
                     if (aprs.flags & F_UNIT)
@@ -9198,7 +9198,7 @@ void dispWindow(String line, uint8_t mode, bool filter)
                 if (idx > -1)
                 {
                     Telemetry[idx].time = now();
-                    strcpy(Telemetry[idx].callsign, (char *)src_call.c_str());
+                    strlcpy(Telemetry[idx].callsign, src_call.c_str(), sizeof(Telemetry[idx].callsign));
 
                     // for (int i = 0; i < 3; i++) Telemetry[idx].UNIT[i][5] = 0;
                     if (aprs.flags & F_UNIT)
@@ -9779,7 +9779,7 @@ void dispWindow(String line, uint8_t mode, bool filter)
                 if (idx > -1)
                 {
                     Telemetry[idx].time = now();
-                    strcpy(Telemetry[idx].callsign, (char *)src_call.c_str());
+                    strlcpy(Telemetry[idx].callsign, src_call.c_str(), sizeof(Telemetry[idx].callsign));
 
                     // for (int i = 0; i < 3; i++) Telemetry[idx].UNIT[i][5] = 0;
                     if (aprs.flags & F_UNIT)

@@ -364,20 +364,20 @@ int pkgListUpdate(char *call, char *raw, uint16_t type, bool channel, uint16_t a
             }
             len = strlen(raw);
             pkgList[i].length = len + 1;
-            if (pkgList[i].raw != NULL)
             {
-                pkgList[i].raw = (char *)realloc(pkgList[i].raw, pkgList[i].length);
-            }
-            else
-            {
-                pkgList[i].raw = (char *)calloc(pkgList[i].length, sizeof(char));
-            }
-            if (pkgList[i].raw)
-            {
-                memset(pkgList[i].raw, 0, pkgList[i].length);
-                memcpy(pkgList[i].raw, raw, len);
-                pkgList[i].raw[len] = 0;
-                log_d("Update: pkgList_idx=%d callsign:%s object:%s", i, callsign, object);
+                char *newRaw;
+                if (pkgList[i].raw != NULL)
+                    newRaw = (char *)realloc(pkgList[i].raw, pkgList[i].length);
+                else
+                    newRaw = (char *)calloc(pkgList[i].length, sizeof(char));
+                if (newRaw)
+                {
+                    pkgList[i].raw = newRaw;
+                    memset(pkgList[i].raw, 0, pkgList[i].length);
+                    memcpy(pkgList[i].raw, raw, len);
+                    pkgList[i].raw[len] = 0;
+                    log_d("Update: pkgList_idx=%d callsign:%s object:%s", i, callsign, object);
+                }
             }
         }
     }
@@ -422,20 +422,20 @@ int pkgListUpdate(char *call, char *raw, uint16_t type, bool channel, uint16_t a
         memcpy(pkgList[i].calsign, callsign, strlen(callsign));
         len = strlen(raw);
         pkgList[i].length = len + 1;
-        if (pkgList[i].raw != NULL)
         {
-            pkgList[i].raw = (char *)realloc(pkgList[i].raw, pkgList[i].length);
-        }
-        else
-        {
-            pkgList[i].raw = (char *)calloc(pkgList[i].length, sizeof(char));
-        }
-        if (pkgList[i].raw)
-        {
-            memset(pkgList[i].raw, 0, pkgList[i].length);
-            memcpy(pkgList[i].raw, raw, len);
-            pkgList[i].raw[len] = 0;
-            log_d("New: pkgList_idx=%d callsign:%s object:%s", i, callsign, object);
+            char *newRaw;
+            if (pkgList[i].raw != NULL)
+                newRaw = (char *)realloc(pkgList[i].raw, pkgList[i].length);
+            else
+                newRaw = (char *)calloc(pkgList[i].length, sizeof(char));
+            if (newRaw)
+            {
+                pkgList[i].raw = newRaw;
+                memset(pkgList[i].raw, 0, pkgList[i].length);
+                memcpy(pkgList[i].raw, raw, len);
+                pkgList[i].raw[len] = 0;
+                log_d("New: pkgList_idx=%d callsign:%s object:%s", i, callsign, object);
+            }
         }
     }
     psramBusy = false;
