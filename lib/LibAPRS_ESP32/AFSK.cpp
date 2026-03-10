@@ -126,10 +126,9 @@ extern float baudRate;  // baudrate
 typedef struct
 {
   int16_t buffer[BUFFER_SIZE]; // Buffer to store int16_t data
-  int head;                    // Index for the next write
-  int tail;                    // Index for the next read
-  int count;                   // Number of elements in the buffer
-  bool lock;
+  volatile int head;           // Index for the next write
+  volatile int tail;           // Index for the next read
+  volatile int count;          // Number of elements in the buffer
 } RingBuffer;
 
 // Initialize the ring buffer
@@ -138,7 +137,6 @@ void RingBuffer_Init(RingBuffer *rb)
   rb->head = 0;
   rb->tail = 0;
   rb->count = 0;
-  rb->lock = false;
 }
 
 // Check if the buffer is full
@@ -160,29 +158,21 @@ bool RingBuffer_Push(RingBuffer *rb, int16_t data)
   {
     return false; // Buffer is full
   }
-  rb->lock = true;
   if (rb->head >= BUFFER_SIZE || rb->head < 0)
     rb->head = 0; // Check if head exceeds buffer size
   rb->buffer[rb->head] = data;
   rb->head = (rb->head + 1) % BUFFER_SIZE; // Wrap around using modulo
   rb->count++;
-  rb->lock = false;
   return true;
 }
 
-// Remove an element from the buffer (pop)
+// Remove an element from the buffer (pop).
+// Callers must protect concurrent ISR access with portENTER_CRITICAL / portEXIT_CRITICAL.
 bool RingBuffer_Pop(RingBuffer *rb, int16_t *data)
 {
   if (RingBuffer_IsEmpty(rb))
   {
     return false; // Buffer is empty
-  }
-  int to = 0;
-  while (rb->lock) // Wait until the buffer is not locked
-  {
-    delay(1); // Avoid busy-waiting, adjust as needed
-    if (to++ > 100)
-      return false; // Timeout after 1 second
   }
   if (rb->tail >= BUFFER_SIZE || rb->tail < 0)
     rb->tail = 0; // Check if tail exceeds buffer size
@@ -683,19 +673,15 @@ void IRAM_ATTR sample_adc_isr()
 {
   if (!hw_afsk_dac_isr)
   {
-    fifo.lock = true;
     // digitalWrite(15,HIGH);
     portENTER_CRITICAL_ISR(&timerMux); // ISR start
     int16_t adc = analogReadMilliVolts(adc_pins[0]);
 
-    // RingBuffer_Push(&fifo, adc);
-    // if(fifo.head >= BUFFER_SIZE || fifo.head < 0) fifo.head = 0; // Check if head exceeds buffer size
     fifo.buffer[fifo.head] = adc;
     fifo.head = (fifo.head + 1) % BUFFER_SIZE; // Wrap around using modulo
     fifo.count++;
     portEXIT_CRITICAL_ISR(&timerMux); // ISR end
     // digitalWrite(15,LOW);
-    fifo.lock = false;
   }
 }
 #else
@@ -981,7 +967,6 @@ static bool IRAM_ATTR s_conv_done_cb(adc_continuous_handle_t stAdcHandle, const 
   // Notify that ADC continuous driver has done enough number of conversions
   // vTaskNotifyGiveFromISR(s_task_handle, &mustYield);
   portENTER_CRITICAL_ISR(&timerMux);
-  fifo.lock = true;
   for (uint32_t k = 0; k < edata->size; k += SOC_ADC_DIGI_RESULT_BYTES)
   {
     adc_digi_output_data_t *p = (adc_digi_output_data_t *)&edata->conv_frame_buffer[k];
@@ -998,13 +983,10 @@ static bool IRAM_ATTR s_conv_done_cb(adc_continuous_handle_t stAdcHandle, const 
 
     if (fifo.head >= BUFFER_SIZE || fifo.head < 0)
       RingBuffer_Init(&fifo); // Check if head exceeds buffer size
-      //fifo.head = 0; // Check if head exceeds buffer size
     fifo.buffer[fifo.head] = adcPush;
     fifo.head = (fifo.head + 1) % BUFFER_SIZE; // Wrap around using modulo
     fifo.count++;
-    // RingBuffer_Push(&fifo, adcPush);
   }
-  fifo.lock = false;
   portEXIT_CRITICAL_ISR(&timerMux);
   // vTaskDelay(TMP102_UPDATE_CICLE_MS / portTICK_PERIOD_MS);
   // return (mustYield == pdTRUE);
@@ -1625,11 +1607,11 @@ void AFSK_Poll(bool SA818, bool RFPower)
           // while(adcq_lock) delay(1);
           // if (!adcq.pop(&adc)) // Pull queue buffer
 
+          portENTER_CRITICAL(&timerMux);
           bool ret = RingBuffer_Pop(&fifo, &adc);
+          portEXIT_CRITICAL(&timerMux);
           if (!ret)
             break;
-          // if (!RingBuffer_Pop(&fifo, &adc))
-          //   break;
 
 #endif
           tp->avg_sum += adc - tp->avg_buf[tp->avg_idx];

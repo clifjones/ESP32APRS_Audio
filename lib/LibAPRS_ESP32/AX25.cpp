@@ -674,7 +674,10 @@ void Ax25BitParse(uint8_t bit, uint8_t modem,uint16_t mV)
 						}
 
 						//if non-APRS frames are not allowed, check if this frame has control=0x03 and PID=0xF0
-						if(Ax25Config.allowNonAprs || (((rx->frame[i + 1] == 0x03) && (rx->frame[i + 2] == 0xF0))))
+						// Bounds check: i+2 must be within frame before accessing control/PID bytes.
+						// Short-circuit: if out of bounds the frame is silently discarded.
+						if((i + 2) < rx->frameIdx &&
+						   (Ax25Config.allowNonAprs || (((rx->frame[i + 1] == 0x03) && (rx->frame[i + 2] == 0xF0)))))
 						{                                                       
 
 							rx->frameReceived = 1;
