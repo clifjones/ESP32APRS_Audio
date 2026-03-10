@@ -2764,6 +2764,11 @@ void setup()
     // TNC2Raw = (int *)malloc(sizeof(int) * PKGTXSIZE);
 #endif
 
+    if (!pkgList || !Telemetry || !txQueue || !msgQueue) {
+        log_e("Fatal: memory allocation failed (pkgList=%p Telemetry=%p txQueue=%p msgQueue=%p)",
+              pkgList, Telemetry, txQueue, msgQueue);
+        ESP.restart();
+    }
     memset(pkgList, 0, sizeof(pkgListType) * PKGLISTSIZE);
     memset(Telemetry, 0, sizeof(TelemetryType) * TLMLISTSIZE);
     memset(txQueue, 0, sizeof(txQueueType) * PKGTXSIZE);

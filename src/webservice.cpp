@@ -120,7 +120,7 @@ void setMainPage(AsyncWebServerRequest *request)
 	webString += "<link rel=\"shortcut icon\" href=\"http://aprs.dprns.com/favicon.ico\" type=\"image/x-icon\" />\n";
 	webString += "<meta http-equiv=\"Expires\" content=\"0\" />\n";
 	if(strlen(config.host_name) > 0)
-		webString += "<title>" + String(config.host_name) + "</title>\n";
+		webString += "<title>" + htmlEncode(config.host_name) + "</title>\n";
 	else
 		webString += "<title>ESP32APRS_Audio</title>\n";
 	webString += "<link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\" />\n";
@@ -212,7 +212,7 @@ void setMainPage(AsyncWebServerRequest *request)
 	// webString += "<div style=\"font-size: 8px; text-align: right; padding-right: 8px;\">ESP32IGate Firmware V" + String(VERSION) + "</div>\n";
 	// webString += "<div style=\"font-size: 8px; text-align: right; padding-right: 8px;\"><a href=\"/logout\">[LOG OUT]</a></div>\n";
 	if(strlen(config.host_name) > 0)
-		webString += "<h1>" + String(config.host_name) + "</h1>\n";
+		webString += "<h1>" + htmlEncode(config.host_name) + "</h1>\n";
 	else
 		webString += "<h1>ESP32APRS_Audio</h1>\n";
 	webString += "<div style=\"font-size: 8px; text-align: right; padding-right: 8px;\"><a href=\"/logout\">[LOG OUT]</a></div>\n";
@@ -440,7 +440,7 @@ void handle_dashboard(AsyncWebServerRequest *request)
 	webString += "<tr>\n";
 	webString += "<tr>\n";
 	webString += "<td>NAME</td>\n";
-	webString += "<td style=\"background: #ffffff;\">" + String(config.bt_name) + "</td>\n";
+	webString += "<td style=\"background: #ffffff;\">" + htmlEncode(config.bt_name) + "</td>\n";
 	webString += "</tr>\n";
 	webString += "<tr>\n";
 	webString += "<tr>\n";
@@ -984,6 +984,7 @@ String event_lastHeard(bool gethtml)
 	html += "<th style=\"min-width:5ch\">AUDIO</th>\n";
 	html += "</tr>\n";
 
+	xSemaphoreTakeRecursive(pkgListMutex, portMAX_DELAY);
 	for (int i = 0; i < PKGLISTSIZE; i++)
 	{
 		if (i >= PKGLISTSIZE)
@@ -1155,6 +1156,7 @@ String event_lastHeard(bool gethtml)
 			line.clear();
 		}
 	}
+	xSemaphoreGiveRecursive(pkgListMutex);
 	html += "</table>\n";
 	// log_d("HTML Length=%d Byte",html.length());
 	if(gethtml) return html;
