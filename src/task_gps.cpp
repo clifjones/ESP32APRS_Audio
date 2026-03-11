@@ -1,4 +1,5 @@
 #include "webservice.h"  // config, gps, webServiceBegin, handle_ws_gnss, WiFi, TimeLib, time.h, ESPAsyncWebServer
+extern SemaphoreHandle_t gpsMutex;
 #include <WiFiClient.h>
 
 extern char nmea[100];
@@ -68,7 +69,9 @@ void taskGPS(void *pvParameters)
 #endif
                     if (c > -1)
                     {
+                        xSemaphoreTake(gpsMutex, portMAX_DELAY);
                         gps.encode((char)c);
+                        xSemaphoreGive(gpsMutex);
                         if (webServiceBegin == false)
                         {
                             if (nmea_idx > 99)
@@ -128,7 +131,9 @@ void taskGPS(void *pvParameters)
                         {
                             c = (char)gnssClient.read();
                             // Serial.print(c);
+                            xSemaphoreTake(gpsMutex, portMAX_DELAY);
                             gps.encode(c);
+                            xSemaphoreGive(gpsMutex);
                             if (webServiceBegin == false)
                             {
                                 if (nmea_idx > 99)
@@ -161,6 +166,7 @@ void taskGPS(void *pvParameters)
                 }
             }
 
+            xSemaphoreTake(gpsMutex, portMAX_DELAY);
             if (gps.time.isValid())
             {
                 if (gps.time.isUpdated())
@@ -192,6 +198,7 @@ void taskGPS(void *pvParameters)
                     }
                 }
             }
+            xSemaphoreGive(gpsMutex);
         }
     }
 }

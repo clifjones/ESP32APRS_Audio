@@ -14,7 +14,7 @@ RTC_DATA_ATTR uint16_t msgID = 0;
 msgType *msgQueue;
 
 extern Configuration config;
-extern bool psramBusy;
+extern SemaphoreHandle_t msgQueueMutex;
 
 // แปลง bytes → HEX string
 String bytesToHexString(const uint8_t *data, size_t len)
@@ -241,11 +241,7 @@ void pkgMsgSort(msgType a[])
     char *ptr2;
     char *ptr3;
     ptr1 = (char *)&t;
-#ifdef BOARD_HAS_PSRAM
-    while (psramBusy)
-        delay(1);
-    psramBusy = true;
-#endif
+    xSemaphoreTake(msgQueueMutex, portMAX_DELAY);
     for (int i = 0; i < (PKGLISTSIZE - 1); i++)
     {
         for (int o = 0; o < (PKGLISTSIZE - (i + 1)); o++)
@@ -260,7 +256,7 @@ void pkgMsgSort(msgType a[])
             }
         }
     }
-    psramBusy = false;
+    xSemaphoreGive(msgQueueMutex);
 }
 
 int pkgMsg_Find(const char *call, uint16_t msgID, bool rxtx)
@@ -292,15 +288,11 @@ int pkgMsgOld()
 msgType getMsgList(int idx)
 {
     msgType ret;
-#ifdef BOARD_HAS_PSRAM
-    while (psramBusy)
-        delay(1);
-    psramBusy = true;
-#endif
+    xSemaphoreTake(msgQueueMutex, portMAX_DELAY);
     memset(&ret, 0, sizeof(msgType));
     if (idx < PKGLISTSIZE)
         memcpy(&ret, &msgQueue[idx], sizeof(msgType));
-    psramBusy = false;
+    xSemaphoreGive(msgQueueMutex);
     return ret;
 }
 
@@ -322,11 +314,7 @@ int pkgMsgUpdate(const char *call, const char *raw, uint16_t msg_id, int8_t ack,
     // strncpy(callsign, call, sz);
     memcpy(callsign, call, sz);
 
-#ifdef BOARD_HAS_PSRAM
-    while (psramBusy)
-        delay(1);
-    psramBusy = true;
-#endif
+    xSemaphoreTake(msgQueueMutex, portMAX_DELAY);
     int i = -1;
     // if (ack > 0) // Check ACK to update
     //{
@@ -338,7 +326,7 @@ int pkgMsgUpdate(const char *call, const char *raw, uint16_t msg_id, int8_t ack,
         i = pkgMsgOld(); // Search free in array
         if (i > PKGLISTSIZE || i < 0)
         {
-            psramBusy = false;
+            xSemaphoreGive(msgQueueMutex);
             return -1;
         }
     }
@@ -371,7 +359,7 @@ int pkgMsgUpdate(const char *call, const char *raw, uint16_t msg_id, int8_t ack,
         log_d("New: msgQueue[%d] callsign:%s msgID:%d ack:%i", i, msgQueue[i].callsign, msgQueue[i].msgID, msgQueue[i].ack);
     }
     //}
-    psramBusy = false;
+    xSemaphoreGive(msgQueueMutex);
     return i;
 }
 

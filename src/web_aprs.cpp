@@ -2345,7 +2345,7 @@ void handle_tlm(AsyncWebServerRequest *request)
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Station Callsign:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input maxlength=\"7\" size=\"6\" id=\"myCall\" name=\"myCall\" type=\"text\" value=\"" + String(config.tlm0_mycall) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input maxlength=\"7\" size=\"6\" id=\"myCall\" name=\"myCall\" type=\"text\" value=\"" + htmlEncode(config.tlm0_mycall) + "\" /></td>\n";
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Station SSID:</b></td>\n";
@@ -2385,7 +2385,7 @@ void handle_tlm(AsyncWebServerRequest *request)
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>Text Comment:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input maxlength=\"50\" size=\"50\" name=\"Comment\" type=\"text\" value=\"" + String(config.tlm0_comment) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input maxlength=\"50\" size=\"50\" name=\"Comment\" type=\"text\" value=\"" + htmlEncode(config.tlm0_comment) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<tr><td style=\"text-align: right;\">Info Interval:</td><td style=\"text-align: left;\"><input min=\"0\" max=\"3600\" step=\"1\" name=\"infoInv\" type=\"number\" value=\"" + String(config.tlm0_info_interval) + "\" />Sec.</td></tr>";
@@ -2430,8 +2430,8 @@ void handle_tlm(AsyncWebServerRequest *request)
 			}
 			html += "</select></td>\n";
 
-			html += "<td style=\"text-align: left;\">Parameter: <input maxlength=\"10\" size=\"8\" name=\"param" + String(ax) + "\" type=\"text\" value=\"" + String(config.tlm0_PARM[ax]) + "\" /></td>\n";
-			html += "<td style=\"text-align: left;\">Unit: <input maxlength=\"8\" size=\"5\" name=\"unit" + String(ax) + "\" type=\"text\" value=\"" + String(config.tlm0_UNIT[ax]) + "\" /></td></tr>\n";
+			html += "<td style=\"text-align: left;\">Parameter: <input maxlength=\"10\" size=\"8\" name=\"param" + String(ax) + "\" type=\"text\" value=\"" + htmlEncode(config.tlm0_PARM[ax]) + "\" /></td>\n";
+			html += "<td style=\"text-align: left;\">Unit: <input maxlength=\"8\" size=\"5\" name=\"unit" + String(ax) + "\" type=\"text\" value=\"" + htmlEncode(config.tlm0_UNIT[ax]) + "\" /></td></tr>\n";
 			html += "<tr><td style=\"text-align: right;\">EQNS:</td><td colspan=\"3\" style=\"text-align: left;\">a:<input min=\"-9999\" max=\"9999\" step=\"0.0001\" name=\"eqns" + String(ax) + "a\" type=\"number\" value=\"" + String(config.tlm0_EQNS[ax][0], 3) + "\" />  b:<input min=\"-9999\" max=\"9999\" step=\"0.0001\" name=\"eqns" + String(ax) + "b\" type=\"number\" value=\"" + String(config.tlm0_EQNS[ax][1], 3) + "\" /> c:<input min=\"-9999\" max=\"9999\" step=\"0.0001\" name=\"eqns" + String(ax) + "c\" type=\"number\" value=\"" + String(config.tlm0_EQNS[ax][2], 3) + "\" /> (av<sup>2</sup>+bv+c)</td></tr>\n";
 			html += "</table></td>";
 			html += "</tr>\n";
@@ -2460,8 +2460,8 @@ void handle_tlm(AsyncWebServerRequest *request)
 			}
 			html += "</select></td>\n";
 
-			html += "<td style=\"text-align: left;\">Parameter: <input maxlength=\"10\" size=\"8\" name=\"param" + String(ax + 5) + "\" type=\"text\" value=\"" + String(config.tlm0_PARM[ax + 5]) + "\" /></td>\n";
-			html += "<td style=\"text-align: left;\">Unit: <input maxlength=\"8\" size=\"5\" name=\"unit" + String(ax + 5) + "\" type=\"text\" value=\"" + String(config.tlm0_UNIT[ax + 5]) + "\" /></td>\n";
+			html += "<td style=\"text-align: left;\">Parameter: <input maxlength=\"10\" size=\"8\" name=\"param" + String(ax + 5) + "\" type=\"text\" value=\"" + htmlEncode(config.tlm0_PARM[ax + 5]) + "\" /></td>\n";
+			html += "<td style=\"text-align: left;\">Unit: <input maxlength=\"8\" size=\"5\" name=\"unit" + String(ax + 5) + "\" type=\"text\" value=\"" + htmlEncode(config.tlm0_UNIT[ax + 5]) + "\" /></td>\n";
 			String LowFlag = "", HighFlag = "";
 			if (config.tlm0_BITS_Active & b)
 				HighFlag = "checked=\"checked\"";
@@ -3917,11 +3917,11 @@ void handle_wireless(AsyncWebServerRequest *request)
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>WiFi AP SSID:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input size=\"32\" maxlength=\"32\" class=\"form-control\" id=\"wifi_ssidAP\" name=\"wifi_ssidAP\" type=\"text\" value=\"" + String(config.wifi_ap_ssid) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input size=\"32\" maxlength=\"32\" class=\"form-control\" id=\"wifi_ssidAP\" name=\"wifi_ssidAP\" type=\"text\" value=\"" + htmlEncode(config.wifi_ap_ssid) + "\" /></td>\n";
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>WiFi AP PASSWORD:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input size=\"63\" maxlength=\"63\" class=\"form-control\" id=\"wifi_passAP\" name=\"wifi_passAP\" type=\"password\" value=\"" + String(config.wifi_ap_pass) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input size=\"63\" maxlength=\"63\" class=\"form-control\" id=\"wifi_passAP\" name=\"wifi_passAP\" type=\"password\" value=\"" + htmlEncode(config.wifi_ap_pass) + "\" /></td>\n";
 		html += "</tr>\n";
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitWiFiAP'  name=\"commitWiFiAP\"> Apply Change </button></div>\n";
@@ -4005,7 +4005,7 @@ void handle_wireless(AsyncWebServerRequest *request)
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>NAME:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input maxlength=\"20\" id=\"bt_name\" name=\"bt_name\" type=\"text\" value=\"" + String(config.bt_name) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input maxlength=\"20\" id=\"bt_name\" name=\"bt_name\" type=\"text\" value=\"" + htmlEncode(config.bt_name) + "\" /></td>\n";
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>PIN:</b></td>\n";
@@ -4013,15 +4013,15 @@ void handle_wireless(AsyncWebServerRequest *request)
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>UUID:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input maxlength=\"37\" size=\"38\" id=\"bt_uuid\" name=\"bt_uuid\" type=\"text\" value=\"" + String(config.bt_uuid) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input maxlength=\"37\" size=\"38\" id=\"bt_uuid\" name=\"bt_uuid\" type=\"text\" value=\"" + htmlEncode(config.bt_uuid) + "\" /></td>\n";
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>UUID RX:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input maxlength=\"37\" size=\"38\" id=\"bt_uuid_rx\" name=\"bt_uuid_rx\" type=\"text\" value=\"" + String(config.bt_uuid_rx) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input maxlength=\"37\" size=\"38\" id=\"bt_uuid_rx\" name=\"bt_uuid_rx\" type=\"text\" value=\"" + htmlEncode(config.bt_uuid_rx) + "\" /></td>\n";
 		html += "</tr>\n";
 		html += "<tr>\n";
 		html += "<td align=\"right\"><b>UUID TX:</b></td>\n";
-		html += "<td style=\"text-align: left;\"><input maxlength=\"37\" size=\"38\" id=\"bt_uuid_tx\" name=\"bt_uuid_tx\" type=\"text\" value=\"" + String(config.bt_uuid_tx) + "\" /></td>\n";
+		html += "<td style=\"text-align: left;\"><input maxlength=\"37\" size=\"38\" id=\"bt_uuid_tx\" name=\"bt_uuid_tx\" type=\"text\" value=\"" + htmlEncode(config.bt_uuid_tx) + "\" /></td>\n";
 		html += "</tr>\n";
 
 		html += "<td align=\"right\"><b>MODE:</b></td>\n";

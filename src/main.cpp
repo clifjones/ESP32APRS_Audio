@@ -263,8 +263,10 @@ void pushTxDisp(uint8_t ch, const char *name, char *info)
 
 statusType status;
 SemaphoreHandle_t pkgListMutex = NULL;  // protects pkgList read/write across tasks
-SemaphoreHandle_t gpsMutex = NULL;      // protects LastLat, LastLng, lastTimeStamp
+SemaphoreHandle_t gpsMutex = NULL;      // protects gps object and LastLat/LastLng/lastTimeStamp
 SemaphoreHandle_t statusMutex = NULL;   // protects status struct snapshot reads
+SemaphoreHandle_t txQueueMutex = NULL;  // protects txQueue (replaces psramBusy for tx path)
+SemaphoreHandle_t msgQueueMutex = NULL; // protects msgQueue (replaces psramBusy for msg path)
 RTC_DATA_ATTR igateTLMType igateTLM;
 RTC_DATA_ATTR dataTLMType systemTLM;
 txQueueType *txQueue;
@@ -1140,9 +1142,12 @@ void logDigi(double lat, double lon, double speed, double course)
     if (lastTimeStamp == 0)
         lastTimeStamp = nowTime;
     time_t tdiff = nowTime - lastTimeStamp;
+    xSemaphoreTake(gpsMutex, portMAX_DELAY);
     double nowLat = gps.location.lat();
     double nowLng = gps.location.lng();
     double spd = gps.speed.kmph();
+    double gps_course = gps.course.deg();
+    xSemaphoreGive(gpsMutex);
 
     // dist = distance(LastLng, LastLat, nowLng, nowLat);
 
@@ -1160,8 +1165,8 @@ void logDigi(double lat, double lon, double speed, double course)
 
         if (speed > 5)
         {
-            speed = gps.speed.kmph();
-            course = gps.course.deg();
+            speed = spd;
+            course = gps_course;
         }
     }
     LastLat = nowLat;
@@ -1272,9 +1277,12 @@ void logWeather(double lat, double lon, double speed, double course)
     if (lastTimeStamp == 0)
         lastTimeStamp = nowTime;
     time_t tdiff = nowTime - lastTimeStamp;
+    xSemaphoreTake(gpsMutex, portMAX_DELAY);
     double nowLat = gps.location.lat();
     double nowLng = gps.location.lng();
     double spd = gps.speed.kmph();
+    double gps_course = gps.course.deg();
+    xSemaphoreGive(gpsMutex);
 
     // dist = distance(LastLng, LastLat, nowLng, nowLat);
 
@@ -1292,8 +1300,8 @@ void logWeather(double lat, double lon, double speed, double course)
 
         if (speed > 5)
         {
-            speed = gps.speed.kmph();
-            course = gps.course.deg();
+            speed = spd;
+            course = gps_course;
         }
     }
     LastLat = nowLat;
@@ -2078,11 +2086,7 @@ int tlmListOld()
 
 bool pkgTxDuplicate(AX25Msg ax25)
 {
-#ifdef BOARD_HAS_PSRAM
-    while (psramBusy)
-        delay(1);
-    psramBusy = true;
-#endif
+    xSemaphoreTake(txQueueMutex, portMAX_DELAY);
     char callsign[12];
     for (int i = 0; i < PKGTXSIZE; i++)
     {
@@ -2104,14 +2108,14 @@ bool pkgTxDuplicate(AX25Msg ax25)
                 if (strncmp(ecs1, (const char *)ax25.info, strlen(ecs1)) >= 0)
                 { // Check duplicate aprs info
                     txQueue[i].Active = false;
-                    psramBusy = false;
+                    xSemaphoreGive(txQueueMutex);
                     return true;
                 }
             }
         }
     }
 
-    psramBusy = false;
+    xSemaphoreGive(txQueueMutex);
     return false;
 }
 
@@ -2133,11 +2137,7 @@ bool pkgTxPush(const char *info, size_t len, int dly, uint8_t Ch)
     char *ecs = strstr(info, ">");
     if (ecs == NULL)
         return false;
-#ifdef BOARD_HAS_PSRAM
-    while (psramBusy)
-        delay(1);
-    psramBusy = true;
-#endif
+    xSemaphoreTake(txQueueMutex, portMAX_DELAY);
     // for (int i = 0; i < PKGTXSIZE; i++)
     // {
     //   if (txQueue[i].Active)
@@ -2172,7 +2172,7 @@ bool pkgTxPush(const char *info, size_t len, int dly, uint8_t Ch)
             break;
         }
     }
-    psramBusy = false;
+    xSemaphoreGive(txQueueMutex);
     return true;
 }
 
@@ -2180,11 +2180,7 @@ bool pkgTxSend()
 {
 //   if (getReceive())
 //     return false;
-#ifdef BOARD_HAS_PSRAM
-    while (psramBusy)
-        delay(1);
-    psramBusy = true;
-#endif
+    xSemaphoreTake(txQueueMutex, portMAX_DELAY);
     // char info[300];
     for (int i = 0; i < PKGTXSIZE; i++)
     {
@@ -2215,8 +2211,7 @@ bool pkgTxSend()
             {
                 if (txQueue[i].Channel & RF_CHANNEL)
                 {
-
-                    psramBusy = false;
+                    xSemaphoreGive(txQueueMutex); // release before slow RF TX
                     if (config.rf_en)
                     {
                         if ((config.rf_type == RF_SR_1WV) || (config.rf_type == RF_SR_1WU) || (config.rf_type == RF_SR_1W350))
@@ -2237,6 +2232,7 @@ bool pkgTxSend()
                     APRS_setPreamble(config.preamble * 100); // Send packet to RF
                     APRS_sendTNC2Pkt((uint8_t *)txQueue[i].Info, txQueue[i].length);
                     igateTLM.TX++;
+                    xSemaphoreTake(txQueueMutex, portMAX_DELAY); // re-acquire to update queue entry
                     txQueue[i].Channel &= ~RF_CHANNEL;
                 }
             }
@@ -2248,7 +2244,7 @@ bool pkgTxSend()
             }
         }
     }
-    psramBusy = false;
+    xSemaphoreGive(txQueueMutex);
     return true;
 }
 
@@ -2739,9 +2735,11 @@ void setup()
 {
     // byte *ptr;
     //  setCpuFrequencyMhz(160);
-    pkgListMutex = xSemaphoreCreateRecursiveMutex();
-    gpsMutex     = xSemaphoreCreateMutex();
-    statusMutex  = xSemaphoreCreateMutex();
+    pkgListMutex  = xSemaphoreCreateRecursiveMutex();
+    gpsMutex      = xSemaphoreCreateMutex();
+    statusMutex   = xSemaphoreCreateMutex();
+    txQueueMutex  = xSemaphoreCreateMutex();
+    msgQueueMutex = xSemaphoreCreateMutex();
 #ifdef BOARD_HAS_PSRAM
     pkgList = (pkgListType *)ps_malloc(sizeof(pkgListType) * PKGLISTSIZE);
     Telemetry = (TelemetryType *)malloc(sizeof(TelemetryType) * TLMLISTSIZE);
@@ -3628,6 +3626,7 @@ String trk_gps_postion(String comment)
         aprs_symbol = config.trk_symbol[1];
     }
 
+    xSemaphoreTake(gpsMutex, portMAX_DELAY);
     if (gps.location.isValid()) // && (gps.hdop.hdop() < 10.0))
     {
         nowLat = gps.location.lat();
@@ -3775,6 +3774,7 @@ String trk_gps_postion(String comment)
     {
         sprintf(rawTNC, ">%s ", config.trk_item);
     }
+    xSemaphoreGive(gpsMutex);
 
     String tnc2Raw = "";
     char *strtmp = (char *)calloc(300, sizeof(char));
