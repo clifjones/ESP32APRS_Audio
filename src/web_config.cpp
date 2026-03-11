@@ -28,6 +28,7 @@ void handle_radio(AsyncWebServerRequest *request)
 	bool radioEnable = false;
 	if (request->hasArg("commitRadio"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
 			// Serial.print("SERVER ARGS ");
@@ -162,6 +163,7 @@ void handle_radio(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitTNC"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool hpf = 0;
 		bool lpf = 0;
 		for (uint8_t i = 0; i < request->args(); i++)
@@ -427,6 +429,7 @@ void handle_radio(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitRadio'  name=\"commitRadio\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitRadio\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form>";
 
@@ -496,6 +499,7 @@ void handle_radio(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitTNC'  name=\"commitTNC\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitTNC\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form>";
 		request->send(200, "text/html", html); // send to someones browser when asked
@@ -512,6 +516,7 @@ void handle_vpn(AsyncWebServerRequest *request)
 
 	if (request->hasArg("commitVPN"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool vpnEn = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -732,6 +737,7 @@ void handle_vpn(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitVPN'  name=\"commitVPN\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitVPN\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form><br /><br />";
 
@@ -771,6 +777,7 @@ void handle_mqtt(AsyncWebServerRequest *request)
 
 	if (request->hasArg("commitMQTT"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool mqttEn = false;
 		config.mqtt_topic_flag = 0;
 		config.mqtt_subscribe_flag = 0;
@@ -1043,6 +1050,7 @@ void handle_mqtt(AsyncWebServerRequest *request)
 		html += "</table><br />\n";
 		html += "<td><input class=\"button\" id=\"submitMQTT\" name=\"commitMQTT\" type=\"submit\" value=\"Save Config\" maxlength=\"80\"/></td>\n";
 		html += "<input type=\"hidden\" name=\"commitMQTT\"/>\n";
+		html += csrfField();
 		html += "</form>\n";
 
 		request->send(200, "text/html", html); // send to someones browser when asked
@@ -1060,6 +1068,7 @@ void handle_msg(AsyncWebServerRequest *request)
 
 	if (request->hasArg("commitChat"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		String toCall;
 		String msg = "";
 		for (uint8_t i = 0; i < request->args(); i++)
@@ -1088,6 +1097,7 @@ void handle_msg(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitMSG"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool msgEn = false;
 		bool msgRf = false;
 		bool msgInet = false;
@@ -1296,6 +1306,7 @@ void handle_msg(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitMSG'  name=\"commitMSG\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitMSG\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form><br /><br />";
 
@@ -1318,6 +1329,7 @@ void handle_msg(AsyncWebServerRequest *request)
 		html += "<td align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitChat\" name=\"commitChat\" type=\"submit\" value=\"Send\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitChat\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 		html += "</form><br />\n";
 
@@ -1335,6 +1347,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	}
 	if (request->hasArg("commitGNSS"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool En = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -1397,6 +1410,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitUART0"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool En = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -1454,6 +1468,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitUART1"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool En = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -1511,6 +1526,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitUART2"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool En = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -1568,6 +1584,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitMODBUS"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool En = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -1618,6 +1635,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitTNC"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool En = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -1660,6 +1678,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitONEWIRE"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool En = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -1694,6 +1713,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitRF"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
 			// Serial.print("SERVER ARGS ");
@@ -1804,6 +1824,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitI2C0"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool En = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -1851,6 +1872,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitI2C1"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool En = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -1898,6 +1920,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitCOUNTER0"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool En = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -1938,6 +1961,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitCOUNTER1"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool En = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -1977,6 +2001,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		request->send(200, "text/html", html);
 	}else if (request->hasArg("commitCMD"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool mqtt = false;
 		bool msg = false;
 		bool bluetooth = false;
@@ -2042,6 +2067,7 @@ void handle_mod(AsyncWebServerRequest *request)
 	#ifdef PPPOS
 	else if (request->hasArg("commitPPPoS"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool pppEn = false;
 		bool pppGnss = false;
 		bool pppNapt = false;
@@ -2274,6 +2300,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitUART0\" name=\"commitUART0\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitUART0\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 
 		html += "</form><br />\n";
@@ -2324,6 +2351,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitUART1\" name=\"commitUART1\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitUART1\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 
 		html += "</form><br />\n";
@@ -2374,6 +2402,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitUART2\" name=\"commitUART2\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitUART2\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 
 		html += "</form><br />\n";
@@ -2402,6 +2431,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitONEWIRE\" name=\"commitONEWIRE\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitONEWIRE\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 		html += "</form><br />\n";
 
@@ -2507,6 +2537,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitRF\" name=\"commitRF\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitRF\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 		html += "</form>\n";
 
@@ -2543,6 +2574,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitI2C0\" name=\"commitI2C0\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitI2C0\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 		html += "</form>\n";
 
@@ -2578,6 +2610,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitCOUNTER0\" name=\"commitCOUNTER0\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitCOUNTER0\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 		html += "</form>\n";
 
@@ -2613,6 +2646,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitI2C1\" name=\"commitI2C1\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitI2C1\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 		html += "</form>\n";
 
@@ -2648,6 +2682,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitCOUNTER1\" name=\"commitCOUNTER1\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitCOUNTER1\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 		html += "</form>\n";
 
@@ -2698,6 +2733,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitGNSS\" name=\"commitGNSS\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitGNSS\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 
 		html += "</form><br />\n";
@@ -2745,6 +2781,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitMODBUS\" name=\"commitMODBUS\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitMODBUS\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 		html += "</form>\n";
 
@@ -2796,6 +2833,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<input class=\"button\" id=\"submitTNC\" name=\"commitTNC\" type=\"submit\" value=\"Apply\" maxlength=\"80\"/>\n";
 		html += "<input type=\"hidden\" name=\"commitTNC\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 		html += "</form>\n";
 		html += "</td></tr></table>\n";
@@ -2847,6 +2885,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitCMD'  name=\"commit\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitCMD\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form><br />";
 
@@ -2949,6 +2988,7 @@ void handle_mod(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitPPPoS'  name=\"commitPPPoS\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitPPPoS\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form>";
 
@@ -3189,6 +3229,7 @@ void handle_system(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitWebAuth"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
 			// Serial.print("SERVER ARGS ");
@@ -3224,6 +3265,7 @@ void handle_system(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitPath"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
 			// Serial.print("SERVER ARGS ");
@@ -3273,6 +3315,7 @@ void handle_system(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitPWR"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool PwrEn = false;
 		config.pwr_sleep_activate = 0;
 
@@ -3414,6 +3457,7 @@ void handle_system(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitLOG"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool PwrEn = false;
 		config.log = 0;
 
@@ -3483,6 +3527,7 @@ void handle_system(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitDISP"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool dispRX = false;
 		bool dispTX = false;
 		bool dispRF = false;
@@ -3834,6 +3879,7 @@ void handle_system(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitWebAuth'  name=\"commit\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitWebAuth\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form><br /><br />";
 
@@ -3941,6 +3987,7 @@ void handle_system(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitPWR'  name=\"commitPWR\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitPWR\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 
 		html += "</form><br /><br />\n";
@@ -3984,6 +4031,7 @@ void handle_system(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitLOG'  name=\"commitLOG\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitLOG\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 
 		html += "</form><br /><br />\n";
@@ -4011,6 +4059,7 @@ void handle_system(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitPath'  name=\"commitPath\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitPath\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table>\n";
 		html += "</form><br /><br />";
 		// delay(1);
@@ -4174,6 +4223,7 @@ void handle_system(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitDISP'  name=\"commitDISP\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitDISP\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form><br />";
 #endif

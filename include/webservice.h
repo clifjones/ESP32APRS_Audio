@@ -144,4 +144,13 @@ String event_lastHeard(bool gethtml=false);
 String event_chatMessage(bool gethtml=false);
 String htmlEncode(const char *s);
 
+// CSRF protection helpers
+extern char csrfToken[33];
+inline String csrfField() {
+    return String("<input type=\"hidden\" name=\"csrf_token\" value=\"") + csrfToken + "\"/>\n";
+}
+inline bool csrfValid(AsyncWebServerRequest *request) {
+    return request->hasArg("csrf_token") && request->arg("csrf_token") == String(csrfToken);
+}
+
 #endif

@@ -331,16 +331,17 @@ int pkgListUpdate(char *call, char *raw, uint16_t type, bool channel, uint16_t a
                 pkgList[i].audio_level = 0;
             }
             len = strlen(raw);
-            pkgList[i].length = len + 1;
             {
+                size_t newLen = len + 1;
                 char *newRaw;
                 if (pkgList[i].raw != NULL)
-                    newRaw = (char *)realloc(pkgList[i].raw, pkgList[i].length);
+                    newRaw = (char *)realloc(pkgList[i].raw, newLen);
                 else
-                    newRaw = (char *)calloc(pkgList[i].length, sizeof(char));
+                    newRaw = (char *)calloc(newLen, sizeof(char));
                 if (newRaw)
                 {
                     pkgList[i].raw = newRaw;
+                    pkgList[i].length = newLen;
                     memset(pkgList[i].raw, 0, pkgList[i].length);
                     memcpy(pkgList[i].raw, raw, len);
                     pkgList[i].raw[len] = 0;
@@ -388,16 +389,17 @@ int pkgListUpdate(char *call, char *raw, uint16_t type, bool channel, uint16_t a
         // strcpy(pkgList[i].calsign, callsign);
         memcpy(pkgList[i].calsign, callsign, strlen(callsign));
         len = strlen(raw);
-        pkgList[i].length = len + 1;
         {
+            size_t newLen = len + 1;
             char *newRaw;
             if (pkgList[i].raw != NULL)
-                newRaw = (char *)realloc(pkgList[i].raw, pkgList[i].length);
+                newRaw = (char *)realloc(pkgList[i].raw, newLen);
             else
-                newRaw = (char *)calloc(pkgList[i].length, sizeof(char));
+                newRaw = (char *)calloc(newLen, sizeof(char));
             if (newRaw)
             {
                 pkgList[i].raw = newRaw;
+                pkgList[i].length = newLen;
                 memset(pkgList[i].raw, 0, pkgList[i].length);
                 memcpy(pkgList[i].raw, raw, len);
                 pkgList[i].raw[len] = 0;

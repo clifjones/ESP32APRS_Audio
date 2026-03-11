@@ -32,6 +32,7 @@
 
 AsyncWebServer async_server(80);
 AsyncWebServer async_websocket(81);
+char csrfToken[33] = {};
 AsyncWebSocket ws("/ws");
 AsyncWebSocket ws_gnss("/ws_gnss");
 
@@ -984,15 +985,17 @@ String event_lastHeard(bool gethtml)
 	html += "<th style=\"min-width:5ch\">AUDIO</th>\n";
 	html += "</tr>\n";
 
-	xSemaphoreTakeRecursive(pkgListMutex, portMAX_DELAY);
 	for (int i = 0; i < PKGLISTSIZE; i++)
 	{
-		if (i >= PKGLISTSIZE)
-			break;
-		pkgListType pkg = getPkgList(i);
+		pkgListType pkg;
+		xSemaphoreTakeRecursive(pkgListMutex, portMAX_DELAY);
+		memset(&pkg, 0, sizeof(pkgListType));
+		memcpy(&pkg, &pkgList[i], sizeof(pkgListType));
+		line = pkg.raw ? String(pkg.raw) : String();
+		pkg.raw = nullptr;
+		xSemaphoreGiveRecursive(pkgListMutex);
 		if (pkg.time > 0)
 		{
-			line = String(pkg.raw);
 			// log_d("IDX=%d RAW:%s",i,line.c_str());
 			int packet = pkg.pkg;
 			int start_val = line.indexOf(">", 0); // หาตำแหน่งแรกของ >
@@ -1156,7 +1159,6 @@ String event_lastHeard(bool gethtml)
 			line.clear();
 		}
 	}
-	xSemaphoreGiveRecursive(pkgListMutex);
 	html += "</table>\n";
 	// log_d("HTML Length=%d Byte",html.length());
 	if(gethtml) return html;
@@ -2112,6 +2114,11 @@ void webService()
 	else
 	{
 		return;
+	}
+	// Generate a per-boot CSRF token (128-bit random, hex-encoded)
+	{
+		uint32_t r[4] = {esp_random(), esp_random(), esp_random(), esp_random()};
+		snprintf(csrfToken, sizeof(csrfToken), "%08x%08x%08x%08x", r[0], r[1], r[2], r[3]);
 	}
 	ws.onEvent(onWsEvent);
 

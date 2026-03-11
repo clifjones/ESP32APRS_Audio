@@ -20,6 +20,7 @@ void handle_igate(AsyncWebServerRequest *request)
 
 	if (request->hasArg("commitIGATE"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 
 		for (int i = 0; i < request->args(); i++)
 		{
@@ -320,6 +321,7 @@ void handle_igate(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitIGATEfilter"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		config.rf2inetFilter = 0;
 		config.inet2rfFilter = 0;
 		for (int i = 0; i < request->args(); i++)
@@ -813,6 +815,7 @@ void handle_igate(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitIGATE'  name=\"commitIGATE\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitIGATE\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form><br /><br />";
 
@@ -942,6 +945,7 @@ void handle_igate(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitIGATEfilter'  name=\"commitIGATEfilter\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitIGATEfilter\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form><br />";
 		if ((ESP.getFreeHeap() / 1000) > 120)
@@ -1001,6 +1005,7 @@ void handle_digi(AsyncWebServerRequest *request)
 
 	if (request->hasArg("commitDIGI"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		config.digiFilter = 0;
 		for (int i = 0; i < request->args(); i++)
 		{
@@ -1665,6 +1670,7 @@ void handle_digi(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitDIGI'  name=\"commitDIGI\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitDIGI\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form><br />";
 		if ((ESP.getFreeHeap() / 1000) > 120)
@@ -1716,6 +1722,7 @@ void handle_wx(AsyncWebServerRequest *request)
 
 	if (request->hasArg("commitWX"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		for (int x = 0; x < WX_SENSOR_NUM; x++)
 			config.wx_sensor_enable[x] = false;
 
@@ -2095,6 +2102,7 @@ void handle_wx(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitWX'  name=\"commitWX\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitWX\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form><br />";
 		if ((ESP.getFreeHeap() / 1000) > 120)
@@ -2151,6 +2159,7 @@ void handle_tlm(AsyncWebServerRequest *request)
 
 	if (request->hasArg("commitTLM"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		for (int i = 0; i < request->args(); i++)
 		{
 			if (request->argName(i) == "Enable")
@@ -2487,7 +2496,8 @@ void handle_tlm(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitTLM'  name=\"commitTLM\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitTLM\"/>\n";
-		html += "</td></tr></table><br />\n";		
+		html += csrfField();
+		html += "</td></tr></table><br />\n";
 		html += "</form><br />";
 		request->send(200, "text/html", html); // send to someones browser when asked
 	}
@@ -2506,6 +2516,7 @@ void handle_sensor(AsyncWebServerRequest *request)
 
 	if (request->hasArg("commitSENSOR"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		//vTaskSuspend(taskSensorHandle);
 		for (int x = 0; x < SENSOR_NUMBER; x++)
 		{
@@ -2826,6 +2837,7 @@ void handle_sensor(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitSENSOR'  name=\"commitSENSOR\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitSENSOR\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form><br />";
 
@@ -2931,6 +2943,7 @@ void handle_tracker(AsyncWebServerRequest *request)
 
 	if (request->hasArg("commitTRACKER"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
 			if (request->argName(i) == "trackerEnable")
@@ -3631,6 +3644,7 @@ void handle_tracker(AsyncWebServerRequest *request)
 	html += "<tr><td colspan=\"2\" align=\"right\">\n";
 	html += "<div><button class=\"button\" type='submit' id='submitTRACKER'  name=\"commitTRACKER\"> Apply Change </button></div>\n";
 	html += "<input type=\"hidden\" name=\"commitTRACKER\"/>\n";
+	html += csrfField();
 	html += "</td></tr></table><br />\n";
 	html += "</form><br />";
 	if ((ESP.getFreeHeap() / 1000) > 120)
@@ -3670,6 +3684,7 @@ void handle_wireless(AsyncWebServerRequest *request)
 
 	if (request->hasArg("commitWiFiAP"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool wifiAP = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -3721,6 +3736,7 @@ void handle_wireless(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitWiFiClient"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool wifiSTA = false;
 		String nameSSID, namePASS;
 		for (int n = 0; n < 5; n++)
@@ -3803,6 +3819,7 @@ void handle_wireless(AsyncWebServerRequest *request)
 	}
 	else if (request->hasArg("commitBluetooth"))
 	{
+		if (!csrfValid(request)) { request->send(403, "text/plain", "CSRF validation failed"); return; }
 		bool btMaster = false;
 		for (uint8_t i = 0; i < request->args(); i++)
 		{
@@ -3926,6 +3943,7 @@ void handle_wireless(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitWiFiAP'  name=\"commitWiFiAP\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitWiFiAP\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form><br />";
 		/************************ WiFi Client **************************/
@@ -3983,6 +4001,7 @@ void handle_wireless(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitWiFiClient'  name=\"commitWiFiClient\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitWiFiClient\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form><br />";
 		/************************ Bluetooth **************************/
@@ -4052,6 +4071,7 @@ void handle_wireless(AsyncWebServerRequest *request)
 		html += "<tr><td colspan=\"2\" align=\"right\">\n";
 		html += "<div><button class=\"button\" type='submit' id='submitBluetooth'  name=\"commitBluetooth\"> Apply Change </button></div>\n";
 		html += "<input type=\"hidden\" name=\"commitBluetooth\"/>\n";
+		html += csrfField();
 		html += "</td></tr></table><br />\n";
 		html += "</form>";
 #endif
