@@ -5571,7 +5571,7 @@ void taskAPRS(void *pvParameters)
                             size_t tlm_sz;
                             if ((TLM_SEQ % 100) == 0)
                             {
-                                char rawInfo[100];
+                                char rawInfo[256];
                                 char name[10];
                                 sprintf(rawInfo, "PARM.");
                                 int i, c = 0;
@@ -6010,7 +6010,7 @@ void taskAPRS(void *pvParameters)
                                     size_t tlm_sz;
                                     if ((IGATE_TLM_SEQ % 100) == 0)
                                     {
-                                        char rawInfo[100];
+                                        char rawInfo[256];
                                         char name[10];
                                         sprintf(rawInfo, "PARM.");
                                         int i, c = 0;
@@ -6272,7 +6272,7 @@ void taskAPRS(void *pvParameters)
                                     size_t tlm_sz;
                                     if ((DIGI_TLM_SEQ % 100) == 0)
                                     {
-                                        char rawInfo[100];
+                                        char rawInfo[256];
                                         char name[10];
                                         sprintf(rawInfo, "PARM.");
                                         int i, c = 0;
@@ -6613,7 +6613,7 @@ void taskAPRS(void *pvParameters)
             if (systemTLM.ParmTimeout < millis())
             {
                 systemTLM.ParmTimeout = millis() + (config.tlm0_info_interval * 1000);
-                char rawInfo[100];
+                char rawInfo[256];
                 char name[10];
                 sprintf(rawInfo, "PARM.");
                 for (int i = 0; i < 13; i++)

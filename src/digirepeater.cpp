@@ -65,6 +65,11 @@ int digiProcess(AX25Msg &Packet)
                     }
                     if (Packet.rpt_flags & (1 << idx))
                         continue;
+                    if (Packet.rpt_count >= AX25_MAX_RPT - 1)
+                    {
+                        digiLog.DropRx++;
+                        return 0; // no room to insert repeater entry
+                    }
                     for (j = idx; j < Packet.rpt_count; j++)
                     {
                         if (Packet.rpt_flags & (1 << j))
@@ -191,6 +196,11 @@ int digiProcess(AX25Msg &Packet)
             }
             else
             {
+                if (Packet.rpt_count >= AX25_MAX_RPT - 1)
+                {
+                    digiLog.DropRx++;
+                    return 0; // no room to insert repeater entry
+                }
                 for (j = idx; j < Packet.rpt_count; j++)
                 {
                     if (Packet.rpt_flags & (1 << j))
