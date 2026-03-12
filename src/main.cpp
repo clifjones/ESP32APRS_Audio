@@ -303,6 +303,8 @@ TaskHandle_t taskSerialHandle;
 TaskHandle_t taskGPSHandle;
 TaskHandle_t taskSensorHandle;
 
+#define STACK_WATERMARK_WARN_WORDS 256U
+
 unsigned long timerNetwork, timerNetwork_old;
 unsigned long timerAPRS, timerAPRS_old;
 unsigned long timerGPS, timerGPS_old;
@@ -4309,6 +4311,25 @@ void loop()
         convertSecondsToDHMS(nmea, upT);
         log_d("Task process APRS=%iuS\t NETWORK=%iuS\t GPS=%iuS\t SERIAL=%iuS\n", timerAPRS, timerNetwork, timerGPS, timerSerial);
         log_d("upTime %s Free heap: %s KB \tWiFi:%s ,RSSI:%s dBm", nmea, String((float)ESP.getFreeHeap() / 1000, 1).c_str(), String(WiFi.SSID()).c_str(), String(WiFi.RSSI()).c_str());
+        log_d("Stack HWM (words) — Network:%u APRS:%u APRSPoll:%u GPS:%u Serial:%u Sensor:%u",
+            taskNetworkHandle  ? uxTaskGetStackHighWaterMark(taskNetworkHandle)  : 0,
+            taskAPRSHandle     ? uxTaskGetStackHighWaterMark(taskAPRSHandle)     : 0,
+            taskAPRSPollHandle ? uxTaskGetStackHighWaterMark(taskAPRSPollHandle) : 0,
+            taskGPSHandle      ? uxTaskGetStackHighWaterMark(taskGPSHandle)      : 0,
+            taskSerialHandle   ? uxTaskGetStackHighWaterMark(taskSerialHandle)   : 0,
+            taskSensorHandle   ? uxTaskGetStackHighWaterMark(taskSensorHandle)   : 0);
+        struct { TaskHandle_t h; const char *name; } taskWatchList[] = {
+            { taskNetworkHandle,  "taskNetwork"  },
+            { taskAPRSHandle,     "taskAPRS"     },
+            { taskAPRSPollHandle, "taskAPRSPoll" },
+            { taskGPSHandle,      "taskGPS"      },
+            { taskSerialHandle,   "taskSerial"   },
+            { taskSensorHandle,   "taskSensor"   },
+        };
+        for (auto &t : taskWatchList) {
+            if (t.h && uxTaskGetStackHighWaterMark(t.h) < STACK_WATERMARK_WARN_WORDS)
+                log_w("LOW STACK: %s watermark < %u words!", t.name, STACK_WATERMARK_WARN_WORDS);
+        }
     }
 
     vTaskDelay(10 / portTICK_PERIOD_MS);

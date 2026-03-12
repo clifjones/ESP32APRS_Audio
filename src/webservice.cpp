@@ -57,6 +57,12 @@ extern int8_t dacEn;
 extern unsigned long upTimeStamp;
 extern double VBat;
 extern bool VBat_Flag;
+extern TaskHandle_t taskNetworkHandle;
+extern TaskHandle_t taskAPRSHandle;
+extern TaskHandle_t taskAPRSPollHandle;
+extern TaskHandle_t taskSerialHandle;
+extern TaskHandle_t taskGPSHandle;
+extern TaskHandle_t taskSensorHandle;
 #ifdef OLED
 #ifdef SH1106
 extern Adafruit_SH1106 display;
@@ -711,6 +717,15 @@ void handle_sysinfo(AsyncWebServerRequest *request)
 		html += "<td><b>N/A</b></td>\n";
 	}
 	// html += "<td style=\"background: #f00\"><b>" + String(ESP.getCycleCount()) + "</b></td>\n";
+	html += "</tr>\n";
+	html += "<tr><td colspan=\"7\"><b>Stack HWM (words)</b></td></tr>\n";
+	html += "<tr>";
+	html += "<td>Net:"  + String(taskNetworkHandle  ? uxTaskGetStackHighWaterMark(taskNetworkHandle)  : 0) + "</td>";
+	html += "<td>APRS:" + String(taskAPRSHandle     ? uxTaskGetStackHighWaterMark(taskAPRSHandle)     : 0) + "</td>";
+	html += "<td>Poll:" + String(taskAPRSPollHandle ? uxTaskGetStackHighWaterMark(taskAPRSPollHandle) : 0) + "</td>";
+	html += "<td>GPS:"  + String(taskGPSHandle      ? uxTaskGetStackHighWaterMark(taskGPSHandle)      : 0) + "</td>";
+	html += "<td>Ser:"  + String(taskSerialHandle   ? uxTaskGetStackHighWaterMark(taskSerialHandle)   : 0) + "</td>";
+	html += "<td>Sns:"  + String(taskSensorHandle   ? uxTaskGetStackHighWaterMark(taskSensorHandle)   : 0) + "</td>";
 	html += "</tr>\n";
 	html += "</table>\n";
 	request->send(200, "text/html", html); // send to someones browser when asked
