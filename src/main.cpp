@@ -3131,7 +3131,7 @@ void setup()
             0);             /* Core where the task should run */
     }
 
-    if (config.ext_tnc_enable)
+    if (config.ext_tnc_enable || config.at_cmd_uart > 0 || config.wx_en)
     {
         xTaskCreatePinnedToCore(
             taskSerial,        /* Function to implement the task */
