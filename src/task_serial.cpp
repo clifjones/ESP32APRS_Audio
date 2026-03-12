@@ -58,7 +58,7 @@ void taskSerial(void *pvParameters)
     }
     for (;;)
     {
-        timerSerial = millis() - timerSerial_old;
+        timerSerial = micros() - timerSerial_old;
         vTaskDelay(10 / portTICK_PERIOD_MS);
         timerSerial_old = micros();
 

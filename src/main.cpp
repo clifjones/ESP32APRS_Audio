@@ -265,8 +265,8 @@ statusType status;
 SemaphoreHandle_t pkgListMutex = NULL;  // protects pkgList read/write across tasks
 SemaphoreHandle_t gpsMutex = NULL;      // protects gps object and LastLat/LastLng/lastTimeStamp
 SemaphoreHandle_t statusMutex = NULL;   // protects status struct snapshot reads
-SemaphoreHandle_t txQueueMutex = NULL;  // protects txQueue (replaces psramBusy for tx path)
-SemaphoreHandle_t msgQueueMutex = NULL; // protects msgQueue (replaces psramBusy for msg path)
+SemaphoreHandle_t txQueueMutex = NULL;  // protects txQueue[]
+SemaphoreHandle_t msgQueueMutex = NULL; // protects msgQueue[]
 RTC_DATA_ATTR igateTLMType igateTLM;
 RTC_DATA_ATTR dataTLMType systemTLM;
 txQueueType *txQueue;
@@ -2057,35 +2057,6 @@ void defaultConfig()
 unsigned long NTP_Timeout;
 unsigned long pingTimeout;
 
-bool psramBusy = false;
-
-bool waitPSRAM(bool state)
-{
-#ifdef BOARD_HAS_PSRAM
-    if (state)
-    {
-        int i = 0;
-        while (psramBusy)
-        {
-            delay(1);
-            if (i++ > 1000)
-            {
-                log_e("PSRAM Busy Timeout");
-                return false;
-            }
-        }
-        return true;
-    }
-    else
-    {
-        psramBusy = false;
-        return true;
-    }
-#else
-    return true;
-#endif
-}
-
 const char *lastTitle = "LAST HEARD";
 
 int tlmList_Find(char *call)
@@ -2153,19 +2124,6 @@ bool pkgTxDuplicate(AX25Msg ax25)
     return false;
 }
 
-int pkgTxCount()
-{
-    int count = 0;
-    for (int i = 0; i < PKGTXSIZE; i++)
-    {
-        if (txQueue[i].Active)
-        {
-            count++;
-        }
-    }
-    return count;
-}
-
 bool pkgTxPush(const char *info, size_t len, int dly, uint8_t Ch)
 {
     char *ecs = strstr(info, ">");
@@ -2183,7 +2141,6 @@ bool pkgTxPush(const char *info, size_t len, int dly, uint8_t Ch)
     //       memcpy(&txQueue[i].Info[0], info, len);
     //       txQueue[i].Delay = dly;
     //       txQueue[i].timeStamp = millis();
-    //       psramBusy = false;
     //       return true;
     //     }
     //   }
