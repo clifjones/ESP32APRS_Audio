@@ -837,9 +837,23 @@ void logTracker(double lat, double lon, double speed, double course)
     double dist;
     time_t nowTime;
 
-    if (gps.time.isValid())
+    // Capture all GPS state in one narrow mutex window before any other GPS access.
+    bool gpsTimeValid;
+    time_t cachedGpsTime = 0;
+    double nowLat, nowLng, spd, gps_course;
+    xSemaphoreTake(gpsMutex, portMAX_DELAY);
+    gpsTimeValid = gps.time.isValid();
+    if (gpsTimeValid)
+        cachedGpsTime = getGpsTime();
+    nowLat = gps.location.lat();
+    nowLng = gps.location.lng();
+    spd = gps.speed.kmph();
+    gps_course = gps.course.deg();
+    xSemaphoreGive(gpsMutex);
+
+    if (gpsTimeValid)
     {
-        time_t timeGps = getGpsTime(); // Local gps time
+        time_t timeGps = cachedGpsTime;
         time(&nowTime);
         int tdiff = abs(timeGps - nowTime);
         if (timeGps > 1700000000 && tdiff > 2) // && timeGps < 2347462800)
@@ -862,13 +876,9 @@ void logTracker(double lat, double lon, double speed, double course)
     getLocalTime(&tmstruct, 100);
     sprintf(dfName, "/trk_%02d%d.csv", (tmstruct.tm_mon) + 1, (tmstruct.tm_year) + 1900);
 
-    xSemaphoreTake(gpsMutex, portMAX_DELAY);
     if (lastTimeStamp == 0)
         lastTimeStamp = nowTime;
     time_t tdiff = nowTime - lastTimeStamp;
-    double nowLat = gps.location.lat();
-    double nowLng = gps.location.lng();
-    double spd = gps.speed.kmph();
 
     // dist = distance(LastLng, LastLat, nowLng, nowLat);
 
@@ -886,14 +896,13 @@ void logTracker(double lat, double lon, double speed, double course)
 
         if (speed > 5)
         {
-            speed = gps.speed.kmph();
-            course = gps.course.deg();
+            speed = spd;
+            course = gps_course;
         }
     }
     LastLat = nowLat;
     LastLng = nowLng;
     lastTimeStamp = nowTime;
-    xSemaphoreGive(gpsMutex);
     // if (!waterTempFlag)
     // 		{
     // ds18b20.setWaitForConversion(false); // makes it async
@@ -980,9 +989,23 @@ void logIGate(double lat, double lon, double speed, double course)
     double dist;
     time_t nowTime;
 
-    if (gps.time.isValid())
+    // Capture all GPS state in one narrow mutex window before any other GPS access.
+    bool gpsTimeValid;
+    time_t cachedGpsTime = 0;
+    double nowLat, nowLng, spd, gps_course;
+    xSemaphoreTake(gpsMutex, portMAX_DELAY);
+    gpsTimeValid = gps.time.isValid();
+    if (gpsTimeValid)
+        cachedGpsTime = getGpsTime();
+    nowLat = gps.location.lat();
+    nowLng = gps.location.lng();
+    spd = gps.speed.kmph();
+    gps_course = gps.course.deg();
+    xSemaphoreGive(gpsMutex);
+
+    if (gpsTimeValid)
     {
-        time_t timeGps = getGpsTime(); // Local gps time
+        time_t timeGps = cachedGpsTime;
         time(&nowTime);
         int tdiff = abs(timeGps - nowTime);
         if (timeGps > 1700000000 && tdiff > 2) // && timeGps < 2347462800)
@@ -1005,13 +1028,9 @@ void logIGate(double lat, double lon, double speed, double course)
     getLocalTime(&tmstruct, 100);
     sprintf(dfName, "/igate_%02d%d.csv", (tmstruct.tm_mon) + 1, (tmstruct.tm_year) + 1900);
 
-    xSemaphoreTake(gpsMutex, portMAX_DELAY);
     if (lastTimeStamp == 0)
         lastTimeStamp = nowTime;
     time_t tdiff = nowTime - lastTimeStamp;
-    double nowLat = gps.location.lat();
-    double nowLng = gps.location.lng();
-    double spd = gps.speed.kmph();
 
     // dist = distance(LastLng, LastLat, nowLng, nowLat);
 
@@ -1029,14 +1048,13 @@ void logIGate(double lat, double lon, double speed, double course)
 
         if (speed > 5)
         {
-            speed = gps.speed.kmph();
-            course = gps.course.deg();
+            speed = spd;
+            course = gps_course;
         }
     }
     LastLat = nowLat;
     LastLng = nowLng;
     lastTimeStamp = nowTime;
-    xSemaphoreGive(gpsMutex);
 
     if (!LITTLEFS.exists(dfName))
     {
@@ -1114,9 +1132,23 @@ void logDigi(double lat, double lon, double speed, double course)
     double dist;
     time_t nowTime;
 
-    if (gps.time.isValid())
+    // Capture all GPS state in one narrow mutex window before any other GPS access.
+    bool gpsTimeValid;
+    time_t cachedGpsTime = 0;
+    double nowLat, nowLng, spd, gps_course;
+    xSemaphoreTake(gpsMutex, portMAX_DELAY);
+    gpsTimeValid = gps.time.isValid();
+    if (gpsTimeValid)
+        cachedGpsTime = getGpsTime();
+    nowLat = gps.location.lat();
+    nowLng = gps.location.lng();
+    spd = gps.speed.kmph();
+    gps_course = gps.course.deg();
+    xSemaphoreGive(gpsMutex);
+
+    if (gpsTimeValid)
     {
-        time_t timeGps = getGpsTime(); // Local gps time
+        time_t timeGps = cachedGpsTime;
         time(&nowTime);
         int tdiff = abs(timeGps - nowTime);
         if (timeGps > 1700000000 && tdiff > 2) // && timeGps < 2347462800)
@@ -1142,12 +1174,6 @@ void logDigi(double lat, double lon, double speed, double course)
     if (lastTimeStamp == 0)
         lastTimeStamp = nowTime;
     time_t tdiff = nowTime - lastTimeStamp;
-    xSemaphoreTake(gpsMutex, portMAX_DELAY);
-    double nowLat = gps.location.lat();
-    double nowLng = gps.location.lng();
-    double spd = gps.speed.kmph();
-    double gps_course = gps.course.deg();
-    xSemaphoreGive(gpsMutex);
 
     // dist = distance(LastLng, LastLat, nowLng, nowLat);
 
@@ -1249,9 +1275,23 @@ void logWeather(double lat, double lon, double speed, double course)
     double dist;
     time_t nowTime;
 
-    if (gps.time.isValid())
+    // Capture all GPS state in one narrow mutex window before any other GPS access.
+    bool gpsTimeValid;
+    time_t cachedGpsTime = 0;
+    double nowLat, nowLng, spd, gps_course;
+    xSemaphoreTake(gpsMutex, portMAX_DELAY);
+    gpsTimeValid = gps.time.isValid();
+    if (gpsTimeValid)
+        cachedGpsTime = getGpsTime();
+    nowLat = gps.location.lat();
+    nowLng = gps.location.lng();
+    spd = gps.speed.kmph();
+    gps_course = gps.course.deg();
+    xSemaphoreGive(gpsMutex);
+
+    if (gpsTimeValid)
     {
-        time_t timeGps = getGpsTime(); // Local gps time
+        time_t timeGps = cachedGpsTime;
         time(&nowTime);
         int tdiff = abs(timeGps - nowTime);
         if (timeGps > 1700000000 && tdiff > 2) // && timeGps < 2347462800)
@@ -1277,12 +1317,6 @@ void logWeather(double lat, double lon, double speed, double course)
     if (lastTimeStamp == 0)
         lastTimeStamp = nowTime;
     time_t tdiff = nowTime - lastTimeStamp;
-    xSemaphoreTake(gpsMutex, portMAX_DELAY);
-    double nowLat = gps.location.lat();
-    double nowLng = gps.location.lng();
-    double spd = gps.speed.kmph();
-    double gps_course = gps.course.deg();
-    xSemaphoreGive(gpsMutex);
 
     // dist = distance(LastLng, LastLat, nowLng, nowLat);
 
@@ -5481,9 +5515,19 @@ void taskAPRS(void *pvParameters)
                 tx_counter++;
                 // log_d("TRACKER tx_counter=%d\t INTERVAL=%d\n", tx_counter, tx_interval);
                 //   Check interval timeout
+                // Snapshot GPS quality + SmartBeacon inputs under a single mutex window.
+                uint32_t sbSats;
+                float sbHdop, sbSpeedKmph, sbCourseDeg;
+                xSemaphoreTake(gpsMutex, portMAX_DELAY);
+                sbSats      = gps.satellites.value();
+                sbHdop      = gps.hdop.hdop();
+                sbSpeedKmph = (float)gps.speed.kmph();
+                sbCourseDeg = (float)gps.course.deg();
+                xSemaphoreGive(gpsMutex);
+
                 if (config.trk_smartbeacon && config.trk_gps)
                 {
-                    if ((gps.satellites.value() > 3) && (gps.hdop.hdop() < 10))
+                    if ((sbSats > 3) && (sbHdop < 10))
                     {
                         if (tx_counter > tx_interval)
                         {
@@ -5513,12 +5557,11 @@ void taskAPRS(void *pvParameters)
                 if (config.trk_gps)
                 {
                     SB_SPEED_OLD = SB_SPEED;
-                    if (gps.satellites.value() > 3 && gps.hdop.hdop() < 10)
+                    if (sbSats > 3 && sbHdop < 10)
                     {
-                        SB_SPEED = (unsigned char)gps.speed.kmph();
-                        // if (gps.course.isUpdated())
-                        if (gps.speed.kmph() > config.trk_lspeed)
-                            SB_HEADING = (int16_t)gps.course.deg();
+                        SB_SPEED = (unsigned char)sbSpeedKmph;
+                        if (sbSpeedKmph > config.trk_lspeed)
+                            SB_HEADING = (int16_t)sbCourseDeg;
                     }
                     else
                     {
@@ -5713,7 +5756,14 @@ void taskAPRS(void *pvParameters)
                     rawData = trk_gps_postion(cmn);
                     if (config.log & LOG_TRACKER)
                     {
-                        logTracker(gps.location.lat(), gps.location.lng(), gps.speed.kmph(), gps.course.deg());
+                        double trkLat, trkLng, trkSpd, trkCrs;
+                        xSemaphoreTake(gpsMutex, portMAX_DELAY);
+                        trkLat = gps.location.lat();
+                        trkLng = gps.location.lng();
+                        trkSpd = gps.speed.kmph();
+                        trkCrs = gps.course.deg();
+                        xSemaphoreGive(gpsMutex);
+                        logTracker(trkLat, trkLng, trkSpd, trkCrs);
                     }
                 }
                 else // TRACKER by FIX position
@@ -5975,13 +6025,24 @@ void taskAPRS(void *pvParameters)
                     String rawData = "";
                     if (config.igate_gps)
                     { // IGATE Send GPS position
-                        if (gps.location.isValid())
+                        double igLat, igLng, igAlt, igSpd, igCrs;
+                        bool igGpsValid;
+                        xSemaphoreTake(gpsMutex, portMAX_DELAY);
+                        igGpsValid = gps.location.isValid();
+                        if (igGpsValid)
                         {
-                            rawData = igate_position(gps.location.lat(), gps.location.lng(), gps.altitude.meters(), "");
+                            igLat = gps.location.lat();
+                            igLng = gps.location.lng();
+                            igAlt = gps.altitude.meters();
+                            igSpd = gps.speed.kmph();
+                            igCrs = gps.course.deg();
+                        }
+                        xSemaphoreGive(gpsMutex);
+                        if (igGpsValid)
+                        {
+                            rawData = igate_position(igLat, igLng, igAlt, "");
                             if (config.log & LOG_IGATE)
-                            {
-                                logIGate(gps.location.lat(), gps.location.lng(), gps.speed.kmph(), gps.course.deg());
-                            }
+                                logIGate(igLat, igLng, igSpd, igCrs);
                         }
                     }
                     else
@@ -6236,13 +6297,24 @@ void taskAPRS(void *pvParameters)
                     String rawData;
                     if (config.digi_gps)
                     { // DIGI Send GPS position
-                        if (gps.location.isValid())
+                        double digiLat, digiLng, digiAlt, digiSpd, digiCrs;
+                        bool digiGpsValid;
+                        xSemaphoreTake(gpsMutex, portMAX_DELAY);
+                        digiGpsValid = gps.location.isValid();
+                        if (digiGpsValid)
                         {
-                            rawData = digi_position(gps.location.lat(), gps.location.lng(), gps.altitude.meters(), "");
+                            digiLat = gps.location.lat();
+                            digiLng = gps.location.lng();
+                            digiAlt = gps.altitude.meters();
+                            digiSpd = gps.speed.kmph();
+                            digiCrs = gps.course.deg();
+                        }
+                        xSemaphoreGive(gpsMutex);
+                        if (digiGpsValid)
+                        {
+                            rawData = digi_position(digiLat, digiLng, digiAlt, "");
                             if (config.log & LOG_DIGI)
-                            {
-                                logDigi(gps.location.lat(), gps.location.lng(), gps.speed.kmph(), gps.course.deg());
-                            }
+                                logDigi(digiLat, digiLng, digiSpd, digiCrs);
                         }
                     }
                     else
@@ -6515,13 +6587,24 @@ void taskAPRS(void *pvParameters)
                 String rawData = "";
                 if (config.wx_gps)
                 { // Wx Send GPS position
-                    if (gps.location.isValid())
+                    double wxLat, wxLng, wxAlt, wxSpd, wxCrs;
+                    bool wxGpsValid;
+                    xSemaphoreTake(gpsMutex, portMAX_DELAY);
+                    wxGpsValid = gps.location.isValid();
+                    if (wxGpsValid)
                     {
-                        rawData = wx_report(gps.location.lat(), gps.location.lng(), gps.altitude.meters(), "");
+                        wxLat = gps.location.lat();
+                        wxLng = gps.location.lng();
+                        wxAlt = gps.altitude.meters();
+                        wxSpd = gps.speed.kmph();
+                        wxCrs = gps.course.deg();
+                    }
+                    xSemaphoreGive(gpsMutex);
+                    if (wxGpsValid)
+                    {
+                        rawData = wx_report(wxLat, wxLng, wxAlt, "");
                         if (config.log & LOG_WX)
-                        {
-                            logWeather(gps.location.lat(), gps.location.lng(), gps.speed.kmph(), gps.course.deg());
-                        }
+                            logWeather(wxLat, wxLng, wxSpd, wxCrs);
                     }
                 }
                 else
