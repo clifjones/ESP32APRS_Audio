@@ -850,10 +850,10 @@ static String handleTimeCommand(const String& cmd)
 }
 
 // ---------------------------------------------------------------------------
-// buildHelp() - list all available commands
+// buildTopLevelHelp() - list special commands and groups only
 // ---------------------------------------------------------------------------
 
-static String buildHelp()
+static String buildTopLevelHelp()
 {
     String out;
 
@@ -876,9 +876,45 @@ static String buildHelp()
     out += "AT+TIME?               Current RTC time\n";
     out += "AT+TIME=YYYY-MM-DD HH:MM:SS  Set RTC time\n";
 
-    // Helper lambda to print one group
-    auto printGroup = [&out](const char* groupName, const ATParam* tbl, size_t n) {
-        out += String("\n=== ") + groupName + " ===\n";
+    out += "\n=== Command Groups (use AT+<GROUP>? for group help) ===\n";
+    out += "AT+SYSTEM?             System (timezone, NTP, hostname, etc.)\n";
+    out += "AT+WIFI_HELP?          WiFi config (AT+WIFI? = status)\n";
+    out += "AT+BT?                 Bluetooth\n";
+    out += "AT+RF?                 RF module\n";
+    out += "AT+IGATE?              iGate\n";
+    out += "AT+DIGI?               Digipeater\n";
+    out += "AT+TRK?                Tracker\n";
+    out += "AT+WX?                 Weather\n";
+    out += "AT+TLM0?               Telemetry 0\n";
+    out += "AT+TLM1?               Telemetry 1\n";
+    out += "AT+DISPLAY?            Display\n";
+    out += "AT+MODEM?              Modem/Audio\n";
+    out += "AT+NETWORK?            Network/VPN/PPP\n";
+    out += "AT+GNSS?               GNSS\n";
+    out += "AT+HWIO?               HW I/O (I2C, UART, OneWire, etc.)\n";
+    out += "AT+PWR?                Power\n";
+#ifdef MQTT
+    out += "AT+MQTT?               MQTT\n";
+#endif
+    out += "AT+MSG?                Message\n";
+
+    return out;
+}
+
+// ---------------------------------------------------------------------------
+// buildGroupHelp() - help for a specific command group
+// ---------------------------------------------------------------------------
+
+static String buildGroupHelp(const char* group)
+{
+    String out;
+
+    out += "=== ";
+    out += group;
+    out += " ===\n";
+
+    // Helper lambda to print one group's params
+    auto printGroup = [&out](const ATParam* tbl, size_t n) {
         for (size_t i = 0; i < n; i++) {
             char buf[80];
             snprintf(buf, sizeof(buf), "AT+%-30s %s\n", tbl[i].name, tbl[i].desc);
@@ -886,8 +922,7 @@ static String buildHelp()
         }
     };
 
-    // System
-    {
+    if (strcmp(group, "System") == 0) {
         static ATParam tbl[] = {
             { "TIMEZONE",      "Timezone offset (float)",       ATP_FLOAT6, nullptr, 0 },
             { "SYNCTIME",      "Enable NTP sync (0/1)",         ATP_BOOL,   nullptr, 0 },
@@ -897,12 +932,9 @@ static String buildHelp()
             { "RESET_TIMEOUT", "Watchdog reset timeout (min)",  ATP_UINT16, nullptr, 0 },
             { "NTP_HOST",      "NTP server hostname",           ATP_STR,    nullptr, 0 },
         };
-        printGroup("System", tbl, sizeof(tbl)/sizeof(tbl[0]));
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // WiFi
-    {
-        out += "\n=== WiFi ===\n";
+    else if (strcmp(group, "WiFi") == 0) {
         out += "AT+WIFI_MODE              WiFi mode (0=OFF,1=STA,2=AP,3=AP+STA)\n";
         out += "AT+WIFI_POWER             WiFi TX power\n";
         for (int i = 0; i < 5; i++) {
@@ -914,9 +946,7 @@ static String buildHelp()
         out += "AT+WIFI_AP_SSID           AP SSID\n";
         out += "AT+WIFI_AP_PASS           AP password\n";
     }
-
-    // BT
-    {
+    else if (strcmp(group, "Bluetooth") == 0) {
         static ATParam tbl[] = {
             { "BT_SLAVE",    "BT slave mode (0/1)",  ATP_BOOL,   nullptr, 0 },
             { "BT_MASTER",   "BT master mode (0/1)", ATP_BOOL,   nullptr, 0 },
@@ -928,169 +958,365 @@ static String buildHelp()
             { "BT_PIN",      "BT pairing PIN",       ATP_UINT32, nullptr, 0 },
             { "BT_POWER",    "BT TX power level",    ATP_UINT8,  nullptr, 0 },
         };
-        printGroup("Bluetooth", tbl, sizeof(tbl)/sizeof(tbl[0]));
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // RF
-    {
-        out += "\n=== RF ===\n";
-        out += "AT+RF_EN  AT+RF_TYPE  AT+FREQ_RX  AT+FREQ_TX\n";
-        out += "AT+OFFSET_RX  AT+OFFSET_TX  AT+TONE_RX  AT+TONE_TX\n";
-        out += "AT+BAND  AT+SQL_LEVEL  AT+RF_POWER  AT+VOLUME  AT+MIC\n";
-        out += "AT+RF_TX_GPIO  AT+RF_RX_GPIO  AT+RF_SQL_GPIO\n";
-        out += "AT+RF_PD_GPIO  AT+RF_PWR_GPIO  AT+RF_PTT_GPIO\n";
-        out += "AT+RF_SQL_ACTIVE  AT+RF_PD_ACTIVE  AT+RF_PWR_ACTIVE  AT+RF_PTT_ACTIVE\n";
-        out += "AT+ADC_GPIO  AT+DAC_GPIO  AT+ADC_SEL_GPIO  AT+DAC_SEL_GPIO\n";
-        out += "AT+ADC_ATTEN  AT+ADC_DC_OFFSET\n";
+    else if (strcmp(group, "RF") == 0) {
+        static ATParam tbl[] = {
+            { "RF_EN",        "RF module enable (0/1)",    ATP_BOOL,   nullptr, 0 },
+            { "RF_TYPE",      "RF module type",            ATP_UINT8,  nullptr, 0 },
+            { "FREQ_RX",      "RX frequency (MHz)",        ATP_FLOAT6, nullptr, 0 },
+            { "FREQ_TX",      "TX frequency (MHz)",        ATP_FLOAT6, nullptr, 0 },
+            { "OFFSET_RX",    "RX offset (Hz)",            ATP_INT,    nullptr, 0 },
+            { "OFFSET_TX",    "TX offset (Hz)",            ATP_INT,    nullptr, 0 },
+            { "TONE_RX",      "RX CTCSS tone",             ATP_INT,    nullptr, 0 },
+            { "TONE_TX",      "TX CTCSS tone",             ATP_INT,    nullptr, 0 },
+            { "BAND",         "RF band",                   ATP_UINT8,  nullptr, 0 },
+            { "SQL_LEVEL",    "Squelch level",             ATP_UINT8,  nullptr, 0 },
+            { "RF_POWER",     "RF power high (0/1)",       ATP_BOOL,   nullptr, 0 },
+            { "VOLUME",       "Audio volume",              ATP_UINT8,  nullptr, 0 },
+            { "MIC",          "Mic gain",                  ATP_UINT8,  nullptr, 0 },
+            { "RF_TX_GPIO",   "RF TX GPIO pin",            ATP_INT8,   nullptr, 0 },
+            { "RF_RX_GPIO",   "RF RX GPIO pin",            ATP_INT8,   nullptr, 0 },
+            { "RF_SQL_GPIO",  "RF squelch GPIO pin",       ATP_INT8,   nullptr, 0 },
+            { "RF_PD_GPIO",   "RF power-down GPIO pin",    ATP_INT8,   nullptr, 0 },
+            { "RF_PWR_GPIO",  "RF power GPIO pin",         ATP_INT8,   nullptr, 0 },
+            { "RF_PTT_GPIO",  "RF PTT GPIO pin",           ATP_INT8,   nullptr, 0 },
+            { "RF_SQL_ACTIVE","RF squelch active level",   ATP_BOOL,   nullptr, 0 },
+            { "RF_PD_ACTIVE", "RF power-down active level",ATP_BOOL,   nullptr, 0 },
+            { "RF_PWR_ACTIVE","RF power active level",     ATP_BOOL,   nullptr, 0 },
+            { "RF_PTT_ACTIVE","RF PTT active level",       ATP_BOOL,   nullptr, 0 },
+            { "ADC_GPIO",     "ADC GPIO pin",              ATP_INT8,   nullptr, 0 },
+            { "DAC_GPIO",     "DAC GPIO pin",              ATP_INT8,   nullptr, 0 },
+            { "ADC_SEL_GPIO", "ADC select GPIO pin",       ATP_INT8,   nullptr, 0 },
+            { "DAC_SEL_GPIO", "DAC select GPIO pin",       ATP_INT8,   nullptr, 0 },
+            { "ADC_ATTEN",    "ADC attenuation",           ATP_UINT8,  nullptr, 0 },
+            { "ADC_DC_OFFSET","ADC DC offset",             ATP_UINT16, nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // IGATE
-    {
-        out += "\n=== IGATE ===\n";
-        out += "AT+IGATE_EN  AT+RF2INET  AT+INET2RF  AT+IGATE_LOC2RF  AT+IGATE_LOC2INET\n";
-        out += "AT+RF2INETFILTER  AT+INET2RFFILTER\n";
-        out += "AT+APRS_SSID  AT+APRS_PORT  AT+APRS_MYCALL  AT+APRS_HOST\n";
-        out += "AT+APRS_PASSCODE  AT+APRS_MONICALL  AT+APRS_FILTER\n";
-        out += "AT+IGATE_BCN  AT+IGATE_GPS  AT+IGATE_TIMESTAMP\n";
-        out += "AT+IGATE_LAT  AT+IGATE_LON  AT+IGATE_ALT  AT+IGATE_INTERVAL\n";
-        out += "AT+IGATE_SYMBOL  AT+IGATE_OBJECT  AT+IGATE_PHG  AT+IGATE_PATH\n";
-        out += "AT+IGATE_COMMENT  AT+IGATE_STS_INTERVAL  AT+IGATE_STATUS\n";
-        out += "AT+IGATE_TLM_INTERVAL\n";
-        out += "AT+IGATE_TLM_AVG<N>  AT+IGATE_TLM_SENSOR<N>  (N=0..4)\n";
-        out += "AT+IGATE_TLM_PRECISION<N>  AT+IGATE_TLM_OFFSET<N>  (N=0..4)\n";
+    else if (strcmp(group, "IGATE") == 0) {
+        static ATParam tbl[] = {
+            { "IGATE_EN",           "iGate enable (0/1)",           ATP_BOOL,   nullptr, 0 },
+            { "RF2INET",            "RF to internet (0/1)",         ATP_BOOL,   nullptr, 0 },
+            { "INET2RF",            "Internet to RF (0/1)",         ATP_BOOL,   nullptr, 0 },
+            { "IGATE_LOC2RF",       "iGate loc beacon to RF (0/1)", ATP_BOOL,   nullptr, 0 },
+            { "IGATE_LOC2INET",     "iGate loc beacon to IS (0/1)", ATP_BOOL,   nullptr, 0 },
+            { "RF2INETFILTER",      "RF-to-IS packet filter",       ATP_UINT16, nullptr, 0 },
+            { "INET2RFFILTER",      "IS-to-RF packet filter",       ATP_UINT16, nullptr, 0 },
+            { "APRS_SSID",          "APRS-IS SSID",                 ATP_UINT8,  nullptr, 0 },
+            { "APRS_PORT",          "APRS-IS port",                 ATP_UINT16, nullptr, 0 },
+            { "APRS_MYCALL",        "APRS callsign",                ATP_STR,    nullptr, 0 },
+            { "APRS_HOST",          "APRS-IS server host",          ATP_STR,    nullptr, 0 },
+            { "APRS_PASSCODE",      "APRS-IS passcode",             ATP_STR,    nullptr, 0 },
+            { "APRS_MONICALL",      "APRS monitor callsign",        ATP_STR,    nullptr, 0 },
+            { "APRS_FILTER",        "APRS-IS server filter",        ATP_STR,    nullptr, 0 },
+            { "IGATE_BCN",          "iGate beacon enable (0/1)",    ATP_BOOL,   nullptr, 0 },
+            { "IGATE_GPS",          "iGate use GPS (0/1)",          ATP_BOOL,   nullptr, 0 },
+            { "IGATE_TIMESTAMP",    "iGate timestamp (0/1)",        ATP_BOOL,   nullptr, 0 },
+            { "IGATE_LAT",          "iGate latitude",               ATP_FLOAT6, nullptr, 0 },
+            { "IGATE_LON",          "iGate longitude",              ATP_FLOAT6, nullptr, 0 },
+            { "IGATE_ALT",          "iGate altitude (m)",           ATP_FLOAT6, nullptr, 0 },
+            { "IGATE_INTERVAL",     "iGate beacon interval (sec)",  ATP_UINT16, nullptr, 0 },
+            { "IGATE_SYMBOL",       "iGate symbol (2 chars)",       ATP_STR,    nullptr, 0 },
+            { "IGATE_OBJECT",       "iGate object name",            ATP_STR,    nullptr, 0 },
+            { "IGATE_PHG",          "iGate PHG string",             ATP_STR,    nullptr, 0 },
+            { "IGATE_PATH",         "iGate path index",             ATP_UINT8,  nullptr, 0 },
+            { "IGATE_COMMENT",      "iGate beacon comment",         ATP_STR,    nullptr, 0 },
+            { "IGATE_STS_INTERVAL", "iGate status interval (sec)",  ATP_UINT16, nullptr, 0 },
+            { "IGATE_STATUS",       "iGate status text",            ATP_STR,    nullptr, 0 },
+            { "IGATE_TLM_INTERVAL", "iGate telemetry interval",     ATP_UINT8,  nullptr, 0 },
+            { "IGATE_TLM_AVG<N>",   "iGate TLM averaging ch (N=0..4)",   ATP_BOOL,   nullptr, 0 },
+            { "IGATE_TLM_SENSOR<N>","iGate TLM sensor ch (N=0..4)",      ATP_UINT8,  nullptr, 0 },
+            { "IGATE_TLM_PRECISION<N>","iGate TLM precision ch (N=0..4)",ATP_UINT8,  nullptr, 0 },
+            { "IGATE_TLM_OFFSET<N>","iGate TLM offset ch (N=0..4)",      ATP_FLOAT6, nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // DIGI
-    {
-        out += "\n=== DIGI ===\n";
-        out += "AT+DIGI_EN  AT+DIGI_AUTO  AT+DIGI_LOC2RF  AT+DIGI_LOC2INET\n";
-        out += "AT+DIGI_TIMESTAMP  AT+DIGI_SSID  AT+DIGI_MYCALL  AT+DIGI_PATH\n";
-        out += "AT+DIGI_DELAY  AT+DIGIFILTER  AT+DIGI_BCN  AT+DIGI_GPS\n";
-        out += "AT+DIGI_LAT  AT+DIGI_LON  AT+DIGI_ALT  AT+DIGI_INTERVAL\n";
-        out += "AT+DIGI_SYMBOL  AT+DIGI_PHG  AT+DIGI_COMMENT\n";
-        out += "AT+DIGI_STS_INTERVAL  AT+DIGI_STATUS  AT+DIGI_TLM_INTERVAL\n";
-        out += "AT+DIGI_TLM_AVG<N>  AT+DIGI_TLM_SENSOR<N>  (N=0..4)\n";
-        out += "AT+DIGI_TLM_PRECISION<N>  AT+DIGI_TLM_OFFSET<N>  (N=0..4)\n";
+    else if (strcmp(group, "DIGI") == 0) {
+        static ATParam tbl[] = {
+            { "DIGI_EN",           "Digipeater enable (0/1)",      ATP_BOOL,   nullptr, 0 },
+            { "DIGI_AUTO",         "Digi auto mode (0/1)",         ATP_BOOL,   nullptr, 0 },
+            { "DIGI_LOC2RF",       "Digi loc to RF (0/1)",         ATP_BOOL,   nullptr, 0 },
+            { "DIGI_LOC2INET",     "Digi loc to IS (0/1)",         ATP_BOOL,   nullptr, 0 },
+            { "DIGI_TIMESTAMP",    "Digi timestamp (0/1)",         ATP_BOOL,   nullptr, 0 },
+            { "DIGI_SSID",         "Digi SSID",                    ATP_UINT8,  nullptr, 0 },
+            { "DIGI_MYCALL",       "Digi callsign",                ATP_STR,    nullptr, 0 },
+            { "DIGI_PATH",         "Digi path index",              ATP_UINT8,  nullptr, 0 },
+            { "DIGI_DELAY",        "Digi TX delay (ms)",           ATP_UINT16, nullptr, 0 },
+            { "DIGIFILTER",        "Digi packet filter",           ATP_UINT16, nullptr, 0 },
+            { "DIGI_BCN",          "Digi beacon enable (0/1)",     ATP_BOOL,   nullptr, 0 },
+            { "DIGI_GPS",          "Digi use GPS (0/1)",           ATP_BOOL,   nullptr, 0 },
+            { "DIGI_LAT",          "Digi latitude",                ATP_FLOAT6, nullptr, 0 },
+            { "DIGI_LON",          "Digi longitude",               ATP_FLOAT6, nullptr, 0 },
+            { "DIGI_ALT",          "Digi altitude (m)",            ATP_FLOAT6, nullptr, 0 },
+            { "DIGI_INTERVAL",     "Digi beacon interval (sec)",   ATP_UINT16, nullptr, 0 },
+            { "DIGI_SYMBOL",       "Digi symbol (2 chars)",        ATP_STR,    nullptr, 0 },
+            { "DIGI_PHG",          "Digi PHG string",              ATP_STR,    nullptr, 0 },
+            { "DIGI_COMMENT",      "Digi beacon comment",          ATP_STR,    nullptr, 0 },
+            { "DIGI_STS_INTERVAL", "Digi status interval (sec)",   ATP_UINT16, nullptr, 0 },
+            { "DIGI_STATUS",       "Digi status text",             ATP_STR,    nullptr, 0 },
+            { "DIGI_TLM_INTERVAL", "Digi telemetry interval",      ATP_UINT8,  nullptr, 0 },
+            { "DIGI_TLM_AVG<N>",   "Digi TLM averaging ch (N=0..4)",   ATP_BOOL,   nullptr, 0 },
+            { "DIGI_TLM_SENSOR<N>","Digi TLM sensor ch (N=0..4)",      ATP_UINT8,  nullptr, 0 },
+            { "DIGI_TLM_PRECISION<N>","Digi TLM precision ch (N=0..4)",ATP_UINT8,  nullptr, 0 },
+            { "DIGI_TLM_OFFSET<N>","Digi TLM offset ch (N=0..4)",      ATP_FLOAT6, nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // Tracker
-    {
-        out += "\n=== Tracker ===\n";
-        out += "AT+TRK_EN  AT+TRK_LOC2RF  AT+TRK_LOC2INET  AT+TRK_TIMESTAMP\n";
-        out += "AT+TRK_SSID  AT+TRK_MYCALL  AT+TRK_PATH  AT+TRK_GPS\n";
-        out += "AT+TRK_LAT  AT+TRK_LON  AT+TRK_ALT  AT+TRK_INTERVAL\n";
-        out += "AT+TRK_SMARTBEACON  AT+TRK_COMPRESS  AT+TRK_ALTITUDE\n";
-        out += "AT+TRK_LOG  AT+TRK_RSSI  AT+TRK_SAT  AT+TRK_DX\n";
-        out += "AT+TRK_HSPEED  AT+TRK_LSPEED  AT+TRK_MAXINTERVAL\n";
-        out += "AT+TRK_MININTERVAL  AT+TRK_MINANGLE  AT+TRK_SLOWINTERVAL\n";
-        out += "AT+TRK_SYMBOL  AT+TRK_SYMMOVE  AT+TRK_SYMSTOP\n";
-        out += "AT+TRK_COMMENT  AT+TRK_ITEM  AT+TRK_STS_INTERVAL  AT+TRK_STATUS\n";
-        out += "AT+TRK_MICE_TYPE  AT+TRK_TLM_INTERVAL\n";
-        out += "AT+TRK_TLM_AVG<N>  AT+TRK_TLM_SENSOR<N>  (N=0..4)\n";
-        out += "AT+TRK_TLM_PRECISION<N>  AT+TRK_TLM_OFFSET<N>  (N=0..4)\n";
+    else if (strcmp(group, "Tracker") == 0) {
+        static ATParam tbl[] = {
+            { "TRK_EN",           "Tracker enable (0/1)",          ATP_BOOL,   nullptr, 0 },
+            { "TRK_LOC2RF",       "Tracker loc to RF (0/1)",       ATP_BOOL,   nullptr, 0 },
+            { "TRK_LOC2INET",     "Tracker loc to IS (0/1)",       ATP_BOOL,   nullptr, 0 },
+            { "TRK_TIMESTAMP",    "Tracker timestamp (0/1)",       ATP_BOOL,   nullptr, 0 },
+            { "TRK_SSID",         "Tracker SSID",                  ATP_UINT8,  nullptr, 0 },
+            { "TRK_MYCALL",       "Tracker callsign",              ATP_STR,    nullptr, 0 },
+            { "TRK_PATH",         "Tracker path index",            ATP_UINT8,  nullptr, 0 },
+            { "TRK_GPS",          "Tracker use GPS (0/1)",         ATP_BOOL,   nullptr, 0 },
+            { "TRK_LAT",          "Tracker latitude",              ATP_FLOAT6, nullptr, 0 },
+            { "TRK_LON",          "Tracker longitude",             ATP_FLOAT6, nullptr, 0 },
+            { "TRK_ALT",          "Tracker altitude (m)",          ATP_FLOAT6, nullptr, 0 },
+            { "TRK_INTERVAL",     "Tracker beacon interval (sec)", ATP_UINT16, nullptr, 0 },
+            { "TRK_SMARTBEACON",  "SmartBeacon enable (0/1)",      ATP_BOOL,   nullptr, 0 },
+            { "TRK_COMPRESS",     "Compressed position (0/1)",     ATP_BOOL,   nullptr, 0 },
+            { "TRK_ALTITUDE",     "Include altitude (0/1)",        ATP_BOOL,   nullptr, 0 },
+            { "TRK_LOG",          "Tracker logging (0/1)",         ATP_BOOL,   nullptr, 0 },
+            { "TRK_RSSI",         "Include RSSI (0/1)",            ATP_BOOL,   nullptr, 0 },
+            { "TRK_SAT",          "Include sat count (0/1)",       ATP_BOOL,   nullptr, 0 },
+            { "TRK_DX",           "Include DX info (0/1)",         ATP_BOOL,   nullptr, 0 },
+            { "TRK_HSPEED",       "SmartBeacon high speed (kph)",  ATP_UINT16, nullptr, 0 },
+            { "TRK_LSPEED",       "SmartBeacon low speed (kph)",   ATP_UINT8,  nullptr, 0 },
+            { "TRK_MAXINTERVAL",  "SmartBeacon max interval",      ATP_UINT8,  nullptr, 0 },
+            { "TRK_MININTERVAL",  "SmartBeacon min interval",      ATP_UINT8,  nullptr, 0 },
+            { "TRK_MINANGLE",     "SmartBeacon min turn angle",    ATP_UINT8,  nullptr, 0 },
+            { "TRK_SLOWINTERVAL", "SmartBeacon slow interval",     ATP_UINT16, nullptr, 0 },
+            { "TRK_SYMBOL",       "Tracker symbol (2 chars)",      ATP_STR,    nullptr, 0 },
+            { "TRK_SYMMOVE",      "Tracker moving symbol",         ATP_STR,    nullptr, 0 },
+            { "TRK_SYMSTOP",      "Tracker stopped symbol",        ATP_STR,    nullptr, 0 },
+            { "TRK_COMMENT",      "Tracker beacon comment",        ATP_STR,    nullptr, 0 },
+            { "TRK_ITEM",         "Tracker item name",             ATP_STR,    nullptr, 0 },
+            { "TRK_STS_INTERVAL", "Tracker status interval (sec)", ATP_UINT16, nullptr, 0 },
+            { "TRK_STATUS",       "Tracker status text",           ATP_STR,    nullptr, 0 },
+            { "TRK_MICE_TYPE",    "MicE message type",             ATP_UINT8,  nullptr, 0 },
+            { "TRK_TLM_INTERVAL", "Tracker TLM interval",         ATP_UINT8,  nullptr, 0 },
+            { "TRK_TLM_AVG<N>",   "Tracker TLM averaging ch (N=0..4)",   ATP_BOOL,   nullptr, 0 },
+            { "TRK_TLM_SENSOR<N>","Tracker TLM sensor ch (N=0..4)",      ATP_UINT8,  nullptr, 0 },
+            { "TRK_TLM_PRECISION<N>","Tracker TLM precision ch (N=0..4)",ATP_UINT8,  nullptr, 0 },
+            { "TRK_TLM_OFFSET<N>","Tracker TLM offset ch (N=0..4)",      ATP_FLOAT6, nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // WX
-    {
-        out += "\n=== WX (Weather) ===\n";
-        out += "AT+WX_EN  AT+WX_2RF  AT+WX_2INET  AT+WX_TIMESTAMP\n";
-        out += "AT+WX_SSID  AT+WX_MYCALL  AT+WX_PATH  AT+WX_GPS\n";
-        out += "AT+WX_LAT  AT+WX_LON  AT+WX_ALT  AT+WX_INTERVAL\n";
-        out += "AT+WX_FLAGE  AT+WX_OBJECT  AT+WX_COMMENT  AT+WX_TLM_INTERVAL\n";
-        out += "AT+WX_SENSOR_ENABLE<N>  AT+WX_SENSOR_AVG<N>  (N=0..25)\n";
-        out += "AT+WX_SENSOR_CH<N>  (N=0..25)\n";
+    else if (strcmp(group, "WX (Weather)") == 0) {
+        static ATParam tbl[] = {
+            { "WX_EN",           "WX enable (0/1)",           ATP_BOOL,   nullptr, 0 },
+            { "WX_2RF",          "WX to RF (0/1)",            ATP_BOOL,   nullptr, 0 },
+            { "WX_2INET",        "WX to internet (0/1)",      ATP_BOOL,   nullptr, 0 },
+            { "WX_TIMESTAMP",    "WX timestamp (0/1)",        ATP_BOOL,   nullptr, 0 },
+            { "WX_SSID",         "WX SSID",                   ATP_UINT8,  nullptr, 0 },
+            { "WX_MYCALL",       "WX callsign",               ATP_STR,    nullptr, 0 },
+            { "WX_PATH",         "WX path index",             ATP_UINT8,  nullptr, 0 },
+            { "WX_GPS",          "WX use GPS (0/1)",          ATP_BOOL,   nullptr, 0 },
+            { "WX_LAT",          "WX latitude",               ATP_FLOAT6, nullptr, 0 },
+            { "WX_LON",          "WX longitude",              ATP_FLOAT6, nullptr, 0 },
+            { "WX_ALT",          "WX altitude (m)",           ATP_FLOAT6, nullptr, 0 },
+            { "WX_INTERVAL",     "WX beacon interval (sec)",  ATP_UINT16, nullptr, 0 },
+            { "WX_FLAGE",        "WX sensor flag bitmask",    ATP_UINT32, nullptr, 0 },
+            { "WX_OBJECT",       "WX object name",            ATP_STR,    nullptr, 0 },
+            { "WX_COMMENT",      "WX beacon comment",         ATP_STR,    nullptr, 0 },
+            { "WX_TLM_INTERVAL", "WX telemetry interval",     ATP_UINT8,  nullptr, 0 },
+            { "WX_SENSOR_ENABLE<N>","WX sensor enable ch (N=0..25)",    ATP_BOOL,  nullptr, 0 },
+            { "WX_SENSOR_AVG<N>",   "WX sensor averaging ch (N=0..25)", ATP_BOOL,  nullptr, 0 },
+            { "WX_SENSOR_CH<N>",    "WX sensor channel ch (N=0..25)",   ATP_UINT8, nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // TLM0
-    {
-        out += "\n=== TLM0 (Telemetry 0) ===\n";
-        out += "AT+TLM0_EN  AT+TLM0_2RF  AT+TLM0_2INET  AT+TLM0_SSID\n";
-        out += "AT+TLM0_MYCALL  AT+TLM0_PATH  AT+TLM0_DATA_INTERVAL\n";
-        out += "AT+TLM0_INFO_INTERVAL  AT+TLM0_BITS_ACTIVE  AT+TLM0_COMMENT\n";
-        out += "AT+TML0_DATA_CHANNEL<N>  (N=0..12)\n";
+    else if (strcmp(group, "TLM0 (Telemetry 0)") == 0) {
+        static ATParam tbl[] = {
+            { "TLM0_EN",             "TLM0 enable (0/1)",           ATP_BOOL,   nullptr, 0 },
+            { "TLM0_2RF",            "TLM0 to RF (0/1)",            ATP_BOOL,   nullptr, 0 },
+            { "TLM0_2INET",          "TLM0 to internet (0/1)",      ATP_BOOL,   nullptr, 0 },
+            { "TLM0_SSID",           "TLM0 SSID",                   ATP_UINT8,  nullptr, 0 },
+            { "TLM0_MYCALL",         "TLM0 callsign",               ATP_STR,    nullptr, 0 },
+            { "TLM0_PATH",           "TLM0 path index",             ATP_UINT8,  nullptr, 0 },
+            { "TLM0_DATA_INTERVAL",  "TLM0 data tx interval (sec)", ATP_UINT16, nullptr, 0 },
+            { "TLM0_INFO_INTERVAL",  "TLM0 info tx interval (sec)", ATP_UINT16, nullptr, 0 },
+            { "TLM0_BITS_ACTIVE",    "TLM0 BITS active mask",       ATP_UINT8,  nullptr, 0 },
+            { "TLM0_COMMENT",        "TLM0 comment",                ATP_STR,    nullptr, 0 },
+            { "TML0_DATA_CHANNEL<N>","TLM0 data channel N (N=0..12)",ATP_UINT8, nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // TLM1
-    {
-        out += "\n=== TLM1 (Telemetry 1) ===\n";
-        out += "AT+TLM1_EN  AT+TLM1_2RF  AT+TLM1_2INET  AT+TLM1_SSID\n";
-        out += "AT+TLM1_MYCALL  AT+TLM1_PATH  AT+TLM1_DATA_INTERVAL\n";
-        out += "AT+TLM1_INFO_INTERVAL  AT+TLM1_BITS_ACTIVE  AT+TLM1_COMMENT\n";
-        out += "AT+TML1_DATA_CHANNEL<N>  (N=0..12)\n";
+    else if (strcmp(group, "TLM1 (Telemetry 1)") == 0) {
+        static ATParam tbl[] = {
+            { "TLM1_EN",             "TLM1 enable (0/1)",           ATP_BOOL,   nullptr, 0 },
+            { "TLM1_2RF",            "TLM1 to RF (0/1)",            ATP_BOOL,   nullptr, 0 },
+            { "TLM1_2INET",          "TLM1 to internet (0/1)",      ATP_BOOL,   nullptr, 0 },
+            { "TLM1_SSID",           "TLM1 SSID",                   ATP_UINT8,  nullptr, 0 },
+            { "TLM1_MYCALL",         "TLM1 callsign",               ATP_STR,    nullptr, 0 },
+            { "TLM1_PATH",           "TLM1 path index",             ATP_UINT8,  nullptr, 0 },
+            { "TLM1_DATA_INTERVAL",  "TLM1 data tx interval (sec)", ATP_UINT16, nullptr, 0 },
+            { "TLM1_INFO_INTERVAL",  "TLM1 info tx interval (sec)", ATP_UINT16, nullptr, 0 },
+            { "TLM1_BITS_ACTIVE",    "TLM1 BITS active mask",       ATP_UINT8,  nullptr, 0 },
+            { "TLM1_COMMENT",        "TLM1 comment",                ATP_STR,    nullptr, 0 },
+            { "TML1_DATA_CHANNEL<N>","TLM1 data channel N (N=0..12)",ATP_UINT8, nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // Display
-    {
-        out += "\n=== Display ===\n";
-        out += "AT+OLED_ENABLE  AT+OLED_TIMEOUT  AT+DIM  AT+CONTRAST  AT+STARTUP\n";
-        out += "AT+H_UP  AT+TX_DISPLAY  AT+RX_DISPLAY\n";
-        out += "AT+DISPFILTER  AT+DISPRF  AT+DISPINET\n";
-        out += "AT+DISP_FLIP  AT+DISP_BRIGHTNESS\n";
+    else if (strcmp(group, "Display") == 0) {
+        static ATParam tbl[] = {
+            { "OLED_ENABLE",     "OLED enable (0/1)",          ATP_BOOL,   nullptr, 0 },
+            { "OLED_TIMEOUT",    "OLED timeout (sec)",         ATP_INT,    nullptr, 0 },
+            { "DIM",             "Display dim level",          ATP_UINT8,  nullptr, 0 },
+            { "CONTRAST",        "Display contrast",           ATP_UINT8,  nullptr, 0 },
+            { "STARTUP",         "Startup display page",       ATP_UINT8,  nullptr, 0 },
+            { "H_UP",            "Heading-up mode (0/1)",      ATP_BOOL,   nullptr, 0 },
+            { "TX_DISPLAY",      "Show TX packets (0/1)",      ATP_BOOL,   nullptr, 0 },
+            { "RX_DISPLAY",      "Show RX packets (0/1)",      ATP_BOOL,   nullptr, 0 },
+            { "DISPFILTER",      "Display packet filter",      ATP_UINT16, nullptr, 0 },
+            { "DISPRF",          "Display RF packets (0/1)",   ATP_BOOL,   nullptr, 0 },
+            { "DISPINET",        "Display INET packets (0/1)", ATP_BOOL,   nullptr, 0 },
+            { "DISP_FLIP",       "Flip display (0/1)",         ATP_BOOL,   nullptr, 0 },
+            { "DISP_BRIGHTNESS", "Display brightness",         ATP_UINT8,  nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // Modem
-    {
-        out += "\n=== Modem/Audio ===\n";
-        out += "AT+AUDIO_HPF  AT+AUDIO_LPF  AT+PREAMBLE\n";
-        out += "AT+MODEM_TYPE  AT+FX25_MODE  AT+TX_TIMESLOT\n";
+    else if (strcmp(group, "Modem/Audio") == 0) {
+        static ATParam tbl[] = {
+            { "AUDIO_HPF",   "Audio high-pass filter (0/1)", ATP_BOOL,   nullptr, 0 },
+            { "AUDIO_LPF",   "Audio low-pass filter (0/1)",  ATP_BOOL,   nullptr, 0 },
+            { "PREAMBLE",    "TX preamble length",           ATP_UINT8,  nullptr, 0 },
+            { "MODEM_TYPE",  "Modem type",                   ATP_UINT8,  nullptr, 0 },
+            { "FX25_MODE",   "FX.25 FEC mode",               ATP_UINT8,  nullptr, 0 },
+            { "TX_TIMESLOT", "TX CSMA time slot (ms)",       ATP_UINT16, nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // Network
-    {
-        out += "\n=== Network/VPN/PPP ===\n";
-        out += "AT+VPN  AT+MODEM  AT+WG_PORT  AT+WG_PEER_ADDRESS\n";
-        out += "AT+WG_LOCAL_ADDRESS  AT+WG_NETMASK_ADDRESS  AT+WG_GW_ADDRESS\n";
-        out += "AT+WG_PUBLIC_KEY  AT+WG_PRIVATE_KEY\n";
-        out += "AT+HTTP_USERNAME  AT+HTTP_PASSWORD\n";
-        out += "AT+PPP_ENABLE  AT+PPP_APN  AT+PPP_PIN\n";
-        out += "AT+PPP_RST_GPIO  AT+PPP_TX_GPIO  AT+PPP_RX_GPIO\n";
-        out += "AT+PPP_RTS_GPIO  AT+PPP_CTS_GPIO  AT+PPP_DTR_GPIO  AT+PPP_RI_GPIO\n";
-        out += "AT+PPP_RST_ACTIVE  AT+PPP_RST_DELAY  AT+PPP_PWR_GPIO  AT+PPP_PWR_ACTIVE\n";
-        out += "AT+PPP_SERIAL  AT+PPP_MODEL  AT+PPP_FLOW_CTRL  AT+PPP_GNSS\n";
+    else if (strcmp(group, "Network/VPN/PPP") == 0) {
+        static ATParam tbl[] = {
+            { "VPN",                "WireGuard VPN enable (0/1)",   ATP_BOOL,   nullptr, 0 },
+            { "MODEM",              "PPP modem enable (0/1)",       ATP_BOOL,   nullptr, 0 },
+            { "WG_PORT",            "WireGuard UDP port",           ATP_UINT16, nullptr, 0 },
+            { "WG_PEER_ADDRESS",    "WireGuard peer address",       ATP_STR,    nullptr, 0 },
+            { "WG_LOCAL_ADDRESS",   "WireGuard local IP",           ATP_STR,    nullptr, 0 },
+            { "WG_NETMASK_ADDRESS", "WireGuard netmask",            ATP_STR,    nullptr, 0 },
+            { "WG_GW_ADDRESS",      "WireGuard gateway",            ATP_STR,    nullptr, 0 },
+            { "WG_PUBLIC_KEY",      "WireGuard peer public key",    ATP_STR,    nullptr, 0 },
+            { "WG_PRIVATE_KEY",     "WireGuard local private key",  ATP_STR,    nullptr, 0 },
+            { "HTTP_USERNAME",      "Web interface username",       ATP_STR,    nullptr, 0 },
+            { "HTTP_PASSWORD",      "Web interface password",       ATP_STR,    nullptr, 0 },
+            { "PPP_ENABLE",         "PPP enable (0/1)",             ATP_BOOL,   nullptr, 0 },
+            { "PPP_APN",            "PPP APN",                      ATP_STR,    nullptr, 0 },
+            { "PPP_PIN",            "PPP SIM PIN",                  ATP_STR,    nullptr, 0 },
+            { "PPP_RST_GPIO",       "PPP modem reset GPIO",         ATP_INT8,   nullptr, 0 },
+            { "PPP_TX_GPIO",        "PPP TX GPIO",                  ATP_INT8,   nullptr, 0 },
+            { "PPP_RX_GPIO",        "PPP RX GPIO",                  ATP_INT8,   nullptr, 0 },
+            { "PPP_RTS_GPIO",       "PPP RTS GPIO",                 ATP_INT8,   nullptr, 0 },
+            { "PPP_CTS_GPIO",       "PPP CTS GPIO",                 ATP_INT8,   nullptr, 0 },
+            { "PPP_DTR_GPIO",       "PPP DTR GPIO",                 ATP_INT8,   nullptr, 0 },
+            { "PPP_RI_GPIO",        "PPP RI GPIO",                  ATP_INT8,   nullptr, 0 },
+            { "PPP_RST_ACTIVE",     "PPP reset active level (0/1)", ATP_BOOL,   nullptr, 0 },
+            { "PPP_RST_DELAY",      "PPP reset delay (ms)",         ATP_UINT16, nullptr, 0 },
+            { "PPP_PWR_GPIO",       "PPP power GPIO",               ATP_INT8,   nullptr, 0 },
+            { "PPP_PWR_ACTIVE",     "PPP power active level (0/1)", ATP_BOOL,   nullptr, 0 },
+            { "PPP_SERIAL",         "PPP serial port index",        ATP_UINT8,  nullptr, 0 },
+            { "PPP_MODEL",          "PPP modem model",              ATP_UINT8,  nullptr, 0 },
+            { "PPP_FLOW_CTRL",      "PPP flow control",             ATP_UINT8,  nullptr, 0 },
+            { "PPP_GNSS",           "PPP modem has GNSS (0/1)",     ATP_BOOL,   nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // GNSS
-    {
-        out += "\n=== GNSS ===\n";
-        out += "AT+GNSS_ENABLE  AT+GNSS_PPS_GPIO  AT+GNSS_CHANNEL\n";
-        out += "AT+GNSS_TCP_PORT  AT+GNSS_TCP_HOST  AT+GNSS_AT_COMMAND\n";
+    else if (strcmp(group, "GNSS") == 0) {
+        static ATParam tbl[] = {
+            { "GNSS_ENABLE",     "GNSS enable (0/1)",        ATP_BOOL,   nullptr, 0 },
+            { "GNSS_PPS_GPIO",   "GNSS PPS GPIO pin",        ATP_INT8,   nullptr, 0 },
+            { "GNSS_CHANNEL",    "GNSS serial channel",      ATP_INT8,   nullptr, 0 },
+            { "GNSS_TCP_PORT",   "GNSS TCP forwarding port", ATP_UINT16, nullptr, 0 },
+            { "GNSS_TCP_HOST",   "GNSS TCP forwarding host", ATP_STR,    nullptr, 0 },
+            { "GNSS_AT_COMMAND", "GNSS init AT command",     ATP_STR,    nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // HW I/O
-    {
-        out += "\n=== HW I/O ===\n";
-        out += "AT+I2C_ENABLE  AT+I2C_SDA_PIN  AT+I2C_SCK_PIN  AT+I2C_RST_PIN  AT+I2C_FREQ\n";
-        out += "AT+I2C1_ENABLE  AT+I2C1_SDA_PIN  AT+I2C1_SCK_PIN  AT+I2C1_FREQ\n";
-        out += "AT+ONEWIRE_ENABLE  AT+ONEWIRE_GPIO\n";
-        out += "AT+UART0_ENABLE  AT+UART0_TX_GPIO  AT+UART0_RX_GPIO  AT+UART0_RTS_GPIO\n";
-        out += "AT+UART1_ENABLE  AT+UART1_TX_GPIO  AT+UART1_RX_GPIO  AT+UART1_RTS_GPIO\n";
-        out += "AT+MODBUS_ENABLE  AT+MODBUS_ADDRESS  AT+MODBUS_CHANNEL  AT+MODBUS_DE_GPIO\n";
-        out += "AT+COUNTER0_ENABLE  AT+COUNTER0_ACTIVE  AT+COUNTER0_GPIO\n";
-        out += "AT+COUNTER1_ENABLE  AT+COUNTER1_ACTIVE  AT+COUNTER1_GPIO\n";
-        out += "AT+EXT_TNC_ENABLE  AT+EXT_TNC_CHANNEL  AT+EXT_TNC_MODE\n";
+    else if (strcmp(group, "HW I/O") == 0) {
+        static ATParam tbl[] = {
+            { "I2C_ENABLE",      "I2C bus 0 enable (0/1)",   ATP_BOOL,   nullptr, 0 },
+            { "I2C_SDA_PIN",     "I2C bus 0 SDA pin",        ATP_INT8,   nullptr, 0 },
+            { "I2C_SCK_PIN",     "I2C bus 0 SCK pin",        ATP_INT8,   nullptr, 0 },
+            { "I2C_RST_PIN",     "I2C bus 0 reset pin",      ATP_INT8,   nullptr, 0 },
+            { "I2C_FREQ",        "I2C bus 0 frequency (Hz)", ATP_UINT32, nullptr, 0 },
+            { "I2C1_ENABLE",     "I2C bus 1 enable (0/1)",   ATP_BOOL,   nullptr, 0 },
+            { "I2C1_SDA_PIN",    "I2C bus 1 SDA pin",        ATP_INT8,   nullptr, 0 },
+            { "I2C1_SCK_PIN",    "I2C bus 1 SCK pin",        ATP_INT8,   nullptr, 0 },
+            { "I2C1_FREQ",       "I2C bus 1 frequency (Hz)", ATP_UINT32, nullptr, 0 },
+            { "ONEWIRE_ENABLE",  "OneWire enable (0/1)",     ATP_BOOL,   nullptr, 0 },
+            { "ONEWIRE_GPIO",    "OneWire GPIO pin",         ATP_INT8,   nullptr, 0 },
+            { "UART0_ENABLE",    "UART0 enable (0/1)",       ATP_BOOL,   nullptr, 0 },
+            { "UART0_TX_GPIO",   "UART0 TX GPIO pin",        ATP_INT8,   nullptr, 0 },
+            { "UART0_RX_GPIO",   "UART0 RX GPIO pin",        ATP_INT8,   nullptr, 0 },
+            { "UART0_RTS_GPIO",  "UART0 RTS GPIO pin",       ATP_INT8,   nullptr, 0 },
+            { "UART1_ENABLE",    "UART1 enable (0/1)",       ATP_BOOL,   nullptr, 0 },
+            { "UART1_TX_GPIO",   "UART1 TX GPIO pin",        ATP_INT8,   nullptr, 0 },
+            { "UART1_RX_GPIO",   "UART1 RX GPIO pin",        ATP_INT8,   nullptr, 0 },
+            { "UART1_RTS_GPIO",  "UART1 RTS GPIO pin",       ATP_INT8,   nullptr, 0 },
+            { "MODBUS_ENABLE",   "Modbus enable (0/1)",      ATP_BOOL,   nullptr, 0 },
+            { "MODBUS_ADDRESS",  "Modbus device address",    ATP_UINT8,  nullptr, 0 },
+            { "MODBUS_CHANNEL",  "Modbus serial channel",    ATP_INT8,   nullptr, 0 },
+            { "MODBUS_DE_GPIO",  "Modbus DE/RE GPIO pin",    ATP_INT8,   nullptr, 0 },
+            { "COUNTER0_ENABLE", "Counter0 enable (0/1)",    ATP_BOOL,   nullptr, 0 },
+            { "COUNTER0_ACTIVE", "Counter0 active level",    ATP_BOOL,   nullptr, 0 },
+            { "COUNTER0_GPIO",   "Counter0 GPIO pin",        ATP_INT8,   nullptr, 0 },
+            { "COUNTER1_ENABLE", "Counter1 enable (0/1)",    ATP_BOOL,   nullptr, 0 },
+            { "COUNTER1_ACTIVE", "Counter1 active level",    ATP_BOOL,   nullptr, 0 },
+            { "COUNTER1_GPIO",   "Counter1 GPIO pin",        ATP_INT8,   nullptr, 0 },
+            { "EXT_TNC_ENABLE",  "Ext TNC enable (0/1)",     ATP_BOOL,   nullptr, 0 },
+            { "EXT_TNC_CHANNEL", "Ext TNC serial channel",   ATP_INT8,   nullptr, 0 },
+            { "EXT_TNC_MODE",    "Ext TNC mode",             ATP_INT8,   nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
-    // Power
-    {
-        out += "\n=== Power ===\n";
-        out += "AT+PWR_EN  AT+PWR_MODE  AT+PWR_SLEEP_INTERVAL  AT+PWR_STANBY_DELAY\n";
-        out += "AT+PWR_SLEEP_ACTIVATE  AT+PWR_GPIO  AT+PWR_ACTIVE\n";
+    else if (strcmp(group, "Power") == 0) {
+        static ATParam tbl[] = {
+            { "PWR_EN",             "Power management enable (0/1)", ATP_BOOL,   nullptr, 0 },
+            { "PWR_MODE",           "Power mode",                    ATP_UINT8,  nullptr, 0 },
+            { "PWR_SLEEP_INTERVAL", "Sleep interval (sec)",          ATP_UINT16, nullptr, 0 },
+            { "PWR_STANBY_DELAY",   "Standby delay (sec)",           ATP_UINT16, nullptr, 0 },
+            { "PWR_SLEEP_ACTIVATE", "Sleep activate source",         ATP_UINT8,  nullptr, 0 },
+            { "PWR_GPIO",           "Power GPIO pin",                ATP_INT8,   nullptr, 0 },
+            { "PWR_ACTIVE",         "Power active level (0/1)",      ATP_BOOL,   nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
-
 #ifdef MQTT
-    {
-        out += "\n=== MQTT ===\n";
-        out += "AT+EN_MQTT  AT+MQTT_HOST  AT+MQTT_TOPIC  AT+MQTT_SUBSCRIBE\n";
-        out += "AT+MQTT_USER  AT+MQTT_PASS  AT+MQTT_PORT\n";
-        out += "AT+MQTT_TOPIC_FLAG  AT+MQTT_SUBSCRIBE_FLAG\n";
+    else if (strcmp(group, "MQTT") == 0) {
+        static ATParam tbl[] = {
+            { "EN_MQTT",             "MQTT enable (0/1)",           ATP_BOOL,   nullptr, 0 },
+            { "MQTT_HOST",           "MQTT broker hostname",        ATP_STR,    nullptr, 0 },
+            { "MQTT_TOPIC",          "MQTT publish topic",          ATP_STR,    nullptr, 0 },
+            { "MQTT_SUBSCRIBE",      "MQTT subscribe topic",        ATP_STR,    nullptr, 0 },
+            { "MQTT_USER",           "MQTT username",               ATP_STR,    nullptr, 0 },
+            { "MQTT_PASS",           "MQTT password",               ATP_STR,    nullptr, 0 },
+            { "MQTT_PORT",           "MQTT broker port",            ATP_UINT16, nullptr, 0 },
+            { "MQTT_TOPIC_FLAG",     "MQTT topic filter flags",     ATP_UINT16, nullptr, 0 },
+            { "MQTT_SUBSCRIBE_FLAG", "MQTT subscribe filter flags", ATP_UINT16, nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
 #endif
-
-    {
-        out += "\n=== Message ===\n";
-        out += "AT+MSG_ENABLE  AT+MSG_MYCALL  AT+MSG_PATH\n";
-        out += "AT+MSG_RF  AT+MSG_INET  AT+MSG_ENCRYPT  AT+MSG_KEY\n";
-        out += "AT+MSG_RETRY  AT+MSG_INTERVAL\n";
+    else if (strcmp(group, "Message") == 0) {
+        static ATParam tbl[] = {
+            { "MSG_ENABLE",   "Message enable (0/1)",       ATP_BOOL,   nullptr, 0 },
+            { "MSG_MYCALL",   "Message callsign",           ATP_STR,    nullptr, 0 },
+            { "MSG_PATH",     "Message path index",         ATP_UINT8,  nullptr, 0 },
+            { "MSG_RF",       "Message via RF (0/1)",       ATP_BOOL,   nullptr, 0 },
+            { "MSG_INET",     "Message via internet (0/1)", ATP_BOOL,   nullptr, 0 },
+            { "MSG_ENCRYPT",  "Message encryption (0/1)",   ATP_BOOL,   nullptr, 0 },
+            { "MSG_KEY",      "Message encryption key",     ATP_STR,    nullptr, 0 },
+            { "MSG_RETRY",    "Message retry count",        ATP_UINT8,  nullptr, 0 },
+            { "MSG_INTERVAL", "Message retry interval (s)", ATP_UINT16, nullptr, 0 },
+        };
+        printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
+    }
+    else {
+        return "";  // Unknown group
     }
 
     return out;
@@ -1108,9 +1334,35 @@ String handleATCommand(String cmd)
     if (cmd == "AT")
         return "OK";
 
-    // Help
+    // Help - top-level only
     if (cmd == "AT?" || cmd == "AT+HELP")
-        return buildHelp();
+        return buildTopLevelHelp();
+
+    // Group help - must be checked before group param handlers
+    {
+        String groupHelp;
+        if      (cmd == "AT+SYSTEM?")     groupHelp = buildGroupHelp("System");
+        else if (cmd == "AT+WIFI_HELP?")  groupHelp = buildGroupHelp("WiFi");
+        else if (cmd == "AT+BT?")         groupHelp = buildGroupHelp("Bluetooth");
+        else if (cmd == "AT+RF?")         groupHelp = buildGroupHelp("RF");
+        else if (cmd == "AT+IGATE?")      groupHelp = buildGroupHelp("IGATE");
+        else if (cmd == "AT+DIGI?")       groupHelp = buildGroupHelp("DIGI");
+        else if (cmd == "AT+TRK?")        groupHelp = buildGroupHelp("Tracker");
+        else if (cmd == "AT+WX?")         groupHelp = buildGroupHelp("WX (Weather)");
+        else if (cmd == "AT+TLM0?")       groupHelp = buildGroupHelp("TLM0 (Telemetry 0)");
+        else if (cmd == "AT+TLM1?")       groupHelp = buildGroupHelp("TLM1 (Telemetry 1)");
+        else if (cmd == "AT+DISPLAY?")    groupHelp = buildGroupHelp("Display");
+        else if (cmd == "AT+MODEM?")      groupHelp = buildGroupHelp("Modem/Audio");
+        else if (cmd == "AT+NETWORK?")    groupHelp = buildGroupHelp("Network/VPN/PPP");
+        else if (cmd == "AT+GNSS?")       groupHelp = buildGroupHelp("GNSS");
+        else if (cmd == "AT+HWIO?")       groupHelp = buildGroupHelp("HW I/O");
+        else if (cmd == "AT+PWR?")        groupHelp = buildGroupHelp("Power");
+#ifdef MQTT
+        else if (cmd == "AT+MQTT?")       groupHelp = buildGroupHelp("MQTT");
+#endif
+        else if (cmd == "AT+MSG?")        groupHelp = buildGroupHelp("Message");
+        if (groupHelp.length()) return groupHelp;
+    }
 
     // Special action commands
     if (cmd == "AT+RESET" || cmd == "AT+RESTART") {
