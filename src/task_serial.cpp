@@ -13,6 +13,10 @@ void taskSerial(void *pvParameters)
     int c;
     char rawP[500];
     char call[11];
+    // Per-UART line accumulators for AT command input. Using accumulators instead
+    // of readStringUntil() ensures partial lines from human-speed typing are not
+    // dispatched prematurely and do not block the task while waiting for more data.
+    String atBuf0, atBuf1, atBuf2, atBuf3;
     log_d("Serial task Init");
     nmea_idx = 0;
     if (config.ext_tnc_enable)
@@ -30,7 +34,7 @@ void taskSerial(void *pvParameters)
         }
         else if (config.ext_tnc_channel == 3)
         {
-            // Serial2.setTimeout(10);
+            Serial2.setTimeout(10);
         }
     }
     if (config.wx_en)
@@ -266,54 +270,70 @@ void taskSerial(void *pvParameters)
 
         if (config.at_cmd_uart > 0)
         {
+            // Read available bytes one at a time into the accumulator.
+            // Dispatch to handleATCommand only when a full line (\n) is received.
+            // This avoids readStringUntil() blocking the task while waiting for the
+            // next character from a human typist, and prevents partial-line dispatch
+            // if the inter-character gap exceeds the stream timeout.
+            // AT_CMD_MAX_LEN caps accumulator growth; lines exceeding this are
+            // silently discarded to prevent heap exhaustion from runaway input.
+            static constexpr size_t AT_CMD_MAX_LEN = 256;
+
+            auto processATChar = [](String &buf, char ch) -> String {
+                if (ch == '\n' || ch == '\r')
+                {
+                    String cmd = buf;
+                    buf.clear();
+                    cmd.trim();
+                    Serial2.println("Process command: " + cmd);
+                    if (cmd.length() == 0) return "";
+                    String ret = handleATCommand(cmd);
+                    log_d("AT-Command response: %s", ret.c_str());
+                    return ret;
+                }
+                else if (ch != '\r' && ch != '\n')
+                {
+                    if (buf.length() >= AT_CMD_MAX_LEN)
+                    {
+                        log_w("AT accumulator overflow, discarding line");
+                        buf.clear();
+                    }
+                    else
+                    {
+                        buf += ch;
+                    }
+                }
+                return "";
+            };
+
             if (config.at_cmd_uart == 1)
             { // UART0
-                if (Serial0.available())
-                {
-                    String cmd = Serial0.readStringUntil('\n');
-                    cmd.trim();
-                    String ret = handleATCommand(String((char *)cmd.c_str()));
-                    if (ret != "")
-                        Serial0.println(ret);
-                    log_d("AT-Command response: %s", ret.c_str());
+                while (Serial0.available()) {
+                    String ret = processATChar(atBuf0, (char)Serial0.read());
+                    if (ret != "") Serial0.println(ret);
                 }
             }
             else if (config.at_cmd_uart == 2)
             { // UART1
-                if (Serial1.available())
-                {
-                    String cmd = Serial1.readStringUntil('\n');
-                    cmd.trim();
-                    String ret = handleATCommand(String((char *)cmd.c_str()));
-                    if (ret != "")
-                        Serial1.println(ret);
-                    log_d("AT-Command response: %s", ret.c_str());
+                while (Serial1.available()) {
+                    String ret = processATChar(atBuf1, (char)Serial1.read());
+                    if (ret != "") Serial1.println(ret);
                 }
             }
 #if SOC_UART_NUM > 2
             else if (config.at_cmd_uart == 3)
             { // UART2
-                if (Serial2.available())
-                {
-                    String cmd = Serial2.readStringUntil('\n');
-                    cmd.trim();
-                    String ret = handleATCommand(String((char *)cmd.c_str()));
-                    if (ret != "")
-                        Serial2.println(ret);
-                    log_d("AT-Command response: %s", ret.c_str());
+                while (Serial2.available()) {
+                    String ret = processATChar(atBuf2, (char)Serial2.read());
+                    if (ret != "") Serial2.println(ret);
                 }
             }
 #endif
             else if (config.at_cmd_uart == 4)
             { // USB-CDC
-                if (Serial.available())
-                {
-                    String cmd = Serial.readStringUntil('\n');
-                    cmd.trim();
-                    String ret = handleATCommand(String((char *)cmd.c_str()));
-                    if (ret != "")
-                        Serial.println(ret);
-                    log_d("AT-Command response: %s", ret.c_str());
+                while (Serial.available()) {
+                    String ret = processATChar(atBuf3, (char)Serial.read());
+                    if (ret != "") Serial.println(ret);
                 }
             }
         }
