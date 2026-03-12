@@ -127,6 +127,12 @@ void ModemTxTestStart(enum ModemTxTestMode type);
 void ModemTxTestStop(void);
 
 /**
+ * @brief Get current TX test mode state
+ * @return Current ModemTxTestMode value
+ */
+enum ModemTxTestMode ModemTxTestGetState(void);
+
+/**
  * @brief Configure and start TX
  * @info This function is used internally by protocol module.
  * @warning Use Ax25TransmitStart() to initialize transmission

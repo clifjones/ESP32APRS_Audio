@@ -9,6 +9,7 @@
 #include "main.h"
 #include "core_version.h"
 #include <WiFi.h>
+#include <modem.h>
 
 extern Configuration config;
 
@@ -1182,12 +1183,14 @@ static String buildGroupHelp(const char* group)
     }
     else if (strcmp(group, "Modem/Audio") == 0) {
         static ATParam tbl[] = {
-            { "AUDIO_HPF",   "Audio high-pass filter (0/1)", ATP_BOOL,   nullptr, 0 },
-            { "AUDIO_LPF",   "Audio low-pass filter (0/1)",  ATP_BOOL,   nullptr, 0 },
-            { "PREAMBLE",    "TX preamble length",           ATP_UINT8,  nullptr, 0 },
-            { "MODEM_TYPE",  "Modem type",                   ATP_UINT8,  nullptr, 0 },
-            { "FX25_MODE",   "FX.25 FEC mode",               ATP_UINT8,  nullptr, 0 },
-            { "TX_TIMESLOT", "TX CSMA time slot (ms)",       ATP_UINT16, nullptr, 0 },
+            { "AUDIO_HPF",      "Audio high-pass filter (0/1)",                 ATP_BOOL,   nullptr, 0 },
+            { "AUDIO_LPF",      "Audio low-pass filter (0/1)",                  ATP_BOOL,   nullptr, 0 },
+            { "PREAMBLE",       "TX preamble length",                           ATP_UINT8,  nullptr, 0 },
+            { "MODEM_TYPE",     "Modem type",                                   ATP_UINT8,  nullptr, 0 },
+            { "FX25_MODE",      "FX.25 FEC mode",                               ATP_UINT8,  nullptr, 0 },
+            { "TX_TIMESLOT",    "TX CSMA time slot (ms)",                       ATP_UINT16, nullptr, 0 },
+            { "TXTEST?",         "TX test state (DIS/MARK/SPACE/ALT)",  ATP_BOOL, nullptr, 0 },
+            { "TXTEST=<MODE>",   "Set TX test mode (DIS/MARK/SPACE/ALT)", ATP_BOOL, nullptr, 0 },
         };
         printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
@@ -1449,6 +1452,36 @@ String handleATCommand(String cmd)
         if (config.wx_en)    mode += ",WX";
         if (config.tlm0_en)  mode += ",TLM0";
         return mode;
+    }
+
+    // TX test commands
+    if (cmd == "AT+TXTEST?") {
+        switch (ModemTxTestGetState()) {
+            case TEST_DISABLED:    return "DIS";
+            case TEST_MARK:        return "MARK";
+            case TEST_SPACE:       return "SPACE";
+            case TEST_ALTERNATING: return "ALT";
+        }
+        return "DIS";
+    }
+
+    if (cmd.startsWith("AT+TXTEST=")) {
+        String mode = cmd.substring(10);
+        mode.toUpperCase();
+        if (mode == "DIS") {
+            ModemTxTestStop();
+            return "OK";
+        } else if (mode == "MARK") {
+            ModemTxTestStart(TEST_MARK);
+            return "OK";
+        } else if (mode == "SPACE") {
+            ModemTxTestStart(TEST_SPACE);
+            return "OK";
+        } else if (mode == "ALT") {
+            ModemTxTestStart(TEST_ALTERNATING);
+            return "OK";
+        }
+        return "ERR: mode must be DIS, MARK, SPACE, or ALT";
     }
 
     // Time commands

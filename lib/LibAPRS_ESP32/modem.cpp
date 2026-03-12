@@ -608,6 +608,11 @@ void ModemTxTestStop(void)
 	setPtt(false); // PTT off
 }
 
+enum ModemTxTestMode ModemTxTestGetState(void)
+{
+	return txTestState;
+}
+
 void ModemTransmitStart(void)
 {
 	txTestState = TEST_DISABLED;
