@@ -285,7 +285,6 @@ void taskSerial(void *pvParameters)
                     String cmd = buf;
                     buf.clear();
                     cmd.trim();
-                    Serial2.println("Process command: " + cmd);
                     if (cmd.length() == 0) return "";
                     String ret = handleATCommand(cmd);
                     log_d("AT-Command response: %s", ret.c_str());

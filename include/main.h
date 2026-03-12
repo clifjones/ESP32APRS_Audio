@@ -11,7 +11,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#define VERSION "1.6"
+#define VERSION "1.7"
 #define VERSION_BUILD 'a'
 
 #include <Arduino.h>
@@ -27,7 +27,9 @@
 
 //-------ESP32---------
 #if defined(CONFIG_IDF_TARGET_ESP32)
+#ifndef ESP32
 #define ESP32
+#endif
 #define USE_TDM
 #define USE_PDM
 #endif
