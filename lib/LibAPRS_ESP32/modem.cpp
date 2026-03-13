@@ -246,6 +246,8 @@ struct DemodState
 
 	int16_t peak;
 	int16_t valley;
+
+	int32_t toneDiscriminator; // mark-vs-space correlator output, captured pre-LPF; 0 for 9600 Bd
 };
 
 static struct DemodState demodState[MODEM_MAX_DEMODULATOR_COUNT];
@@ -297,6 +299,26 @@ void ModemGetSignalLevel(uint8_t modem, int8_t *peak, int8_t *valley, uint8_t *l
 	*peak = (100 * (int32_t)demodState[modem].peak) >> 12;
 	*valley = (100 * (int32_t)demodState[modem].valley) >> 12;
 	*level = (100 * (int32_t)(demodState[modem].peak - demodState[modem].valley)) >> 13;
+}
+
+int32_t ModemGetToneDiscriminator(uint8_t modem)
+{
+	return demodState[modem].toneDiscriminator;
+}
+
+uint16_t ModemGetDcdCounter(uint8_t modem)
+{
+	return demodState[modem].dcdCounter;
+}
+
+uint16_t ModemGetDcdThres(uint8_t modem)
+{
+	return demodState[modem].dcdThres;
+}
+
+uint8_t ModemGetDemodDcd(uint8_t modem)
+{
+	return demodState[modem].dcd;
 }
 
 enum ModemPrefilter ModemGetFilterType(uint8_t modem)
@@ -476,6 +498,7 @@ static int32_t demodulate(int16_t sample, struct DemodState *dem)
 		outLoQ >>= 14;
 
 		sample = (abs(outLoI) + abs(outLoQ)) - (abs(outHiI) + abs(outHiQ));
+		dem->toneDiscriminator = sample;
 	}
 
 	// DCD using "PLL"

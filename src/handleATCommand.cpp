@@ -1191,6 +1191,10 @@ static String buildGroupHelp(const char* group)
             { "TX_TIMESLOT",    "TX CSMA time slot (ms)",                       ATP_UINT16, nullptr, 0 },
             { "TXTEST?",         "TX test state (DIS/MARK/SPACE/ALT)",  ATP_BOOL, nullptr, 0 },
             { "TXTEST=<MODE>",   "Set TX test mode (DIS/MARK/SPACE/ALT)", ATP_BOOL, nullptr, 0 },
+            { "RXLEVEL?",        "RX level snapshot: lvl,pk,vl,dcd per demod", ATP_BOOL, nullptr, 0 },
+            { "RXLEVEL=<SECS>",  "Stream level/500ms for N secs (UART only)", ATP_BOOL, nullptr, 0 },
+            { "RXSTATE?",        "RX state: tone disc+DCD counter per demod",  ATP_BOOL, nullptr, 0 },
+            { "RXSTATE=<SECS>",  "Stream state/500ms for N secs (UART only)", ATP_BOOL, nullptr, 0 },
         };
         printGroup(tbl, sizeof(tbl)/sizeof(tbl[0]));
     }
@@ -1326,10 +1330,83 @@ static String buildGroupHelp(const char* group)
 }
 
 // ---------------------------------------------------------------------------
+// RX monitor task infrastructure
+//
+// Both AT+RXLEVEL=<N> and AT+RXSTATE=<N> spawn this single task rather than
+// blocking the calling task.  The handle is set before xTaskCreate returns and
+// cleared by the task itself just before it self-deletes, so a second command
+// issued while a monitor is still running is rejected cleanly.
+// ---------------------------------------------------------------------------
+
+struct RxMonParams {
+    Print*   stream;   // UART stream to write to (must outlive the task)
+    uint16_t secs;     // total run time requested by the user
+    bool     stateMode; // false = RXLEVEL, true = RXSTATE
+};
+
+static TaskHandle_t s_rxMonHandle = nullptr;
+
+static void rxMonitorTask(void* pv)
+{
+    RxMonParams* p = static_cast<RxMonParams*>(pv);
+    uint8_t  count  = ModemGetDemodulatorCount();
+    bool     is9600 = (p->stateMode && ModemGetBaudrate() >= 9000.f);
+    uint32_t t0     = millis();
+    uint32_t endMs  = t0 + (uint32_t)p->secs * 1000;
+    uint32_t nextMs = t0;
+
+    if (p->stateMode)
+        p->stream->printf("RX STATE MONITOR (%us, 500ms interval, baud=%.0f)\r\n",
+                          p->secs, ModemGetBaudrate());
+    else
+        p->stream->printf("RX LEVEL MONITOR (%us, 500ms interval)\r\n", p->secs);
+
+    while (millis() < endMs) {
+        uint32_t now = millis();
+        if (now >= nextMs) {
+            char line[200];
+            int pos = snprintf(line, sizeof(line), "t=%5.1fs", (now - t0) / 1000.0f);
+            for (uint8_t i = 0; i < count && pos < (int)sizeof(line) - 60; i++) {
+                int8_t pk, vl; uint8_t lvl;
+                ModemGetSignalLevel(i, &pk, &vl, &lvl);
+                if (p->stateMode) {
+                    uint16_t ctr   = ModemGetDcdCounter(i);
+                    uint16_t thres = ModemGetDcdThres(i);
+                    uint8_t  dcd   = ModemGetDemodDcd(i);
+                    if (is9600) {
+                        pos += snprintf(line + pos, sizeof(line) - pos,
+                                        " D%u:lvl=%u%%,ctr=%u/%u,dcd=%s",
+                                        i, lvl, ctr, thres, dcd ? "ON" : "OFF");
+                    } else {
+                        int32_t disc = ModemGetToneDiscriminator(i);
+                        const char* tone = (disc > 0) ? "MARK" : (disc < 0) ? "SPCE" : "IDLE";
+                        pos += snprintf(line + pos, sizeof(line) - pos,
+                                        " D%u:lvl=%u%%,%s(%+ld),ctr=%u/%u,dcd=%s",
+                                        i, lvl, tone, (long)disc, ctr, thres, dcd ? "ON" : "OFF");
+                    }
+                } else {
+                    pos += snprintf(line + pos, sizeof(line) - pos,
+                                    " D%u:lvl=%u%%,pk=%+d%%,vl=%+d%%,dcd=%s",
+                                    i, lvl, (int)pk, (int)vl, ModemGetDemodDcd(i) ? "ON" : "OFF");
+                }
+            }
+            p->stream->println(line);
+            nextMs += 500;
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+
+    p->stream->println("DONE");
+    delete p;
+    s_rxMonHandle = nullptr;
+    vTaskDelete(nullptr);
+}
+
+// ---------------------------------------------------------------------------
 // Main entry point
 // ---------------------------------------------------------------------------
 
-String handleATCommand(String cmd)
+String handleATCommand(String cmd, Print* stream)
 {
     cmd.trim();
     if (!cmd.startsWith("AT"))
@@ -1482,6 +1559,114 @@ String handleATCommand(String cmd)
             return "OK";
         }
         return "ERR: mode must be DIS, MARK, SPACE, or ALT";
+    }
+
+    // ---------------------------------------------------------------------------
+    // RX monitor commands  (Modem/Audio group)
+    //
+    // AT+RXLEVEL?
+    //   One-shot snapshot of signal level for all demodulators.
+    //   One space-separated field per demodulator, pipe-delimited:
+    //     D<n>:lvl=<0-100>%,pk=<signed>%,vl=<signed>%,dcd=ON|OFF
+    //   lvl is the symmetric peak-to-valley envelope.  pk/vl are signed
+    //   relative to a normalised full-scale of ±100%.  dcd reflects the
+    //   per-demodulator DCD state, not the global OR.
+    //
+    // AT+RXLEVEL=<seconds>    (UART only, 1-300 s)
+    //   Spawns a background FreeRTOS task (rxMonitorTask, pri=1, stack=3072)
+    //   that emits one level line every 500 ms for the requested duration,
+    //   then prints "DONE" and self-deletes.  Returns "" immediately so the
+    //   calling task is not blocked.  Only one monitor task may run at a time;
+    //   a second command while one is active returns an error.
+    //
+    // AT+RXSTATE?
+    //   One-shot snapshot of full demodulator state.
+    //   1200/300 Bd (correlator path):
+    //     D<n>:lvl=%,MARK|SPCE|IDLE(<disc>),ctr=<counter>/<thres>,dcd=ON|OFF
+    //   9600 Bd (GFSK path, no correlator):
+    //     D<n>:lvl=%,ctr=<counter>/<thres>,dcd=ON|OFF
+    //   disc is the pre-LPF mark-vs-space correlator output: positive = mark
+    //   energy dominant, negative = space dominant, magnitude = confidence.
+    //   Because it is sampled before the loop filter it is instantaneously
+    //   noisy; use ctr/thres for a stable lock indicator.
+    //
+    // AT+RXSTATE=<seconds>    (UART only, 1-300 s)
+    //   Same as AT+RXLEVEL= but emits full state (discriminator + DCD counter).
+    //
+    // Limitations:
+    //   - Streaming commands require a UART Print stream (not MQTT or APRS
+    //     message), which is enforced at call time.
+    //   - toneDiscriminator is only updated inside the 1200/300 Bd correlator
+    //     path; it always reads 0 for 9600 Bd.
+    //   - The streaming task holds a raw Print* pointer; disconnecting the
+    //     serial port during a monitor run is undefined behaviour.
+    // ---------------------------------------------------------------------------
+
+    if (cmd == "AT+RXLEVEL?") {
+        uint8_t count = ModemGetDemodulatorCount();
+        String out;
+        for (uint8_t i = 0; i < count; i++) {
+            int8_t pk, vl; uint8_t lvl;
+            ModemGetSignalLevel(i, &pk, &vl, &lvl);
+            if (i > 0) out += " | ";
+            char buf[48];
+            snprintf(buf, sizeof(buf), "D%u:lvl=%u%%,pk=%+d%%,vl=%+d%%,dcd=%s",
+                     i, lvl, (int)pk, (int)vl, ModemGetDemodDcd(i) ? "ON" : "OFF");
+            out += buf;
+        }
+        return out;
+    }
+
+    if (cmd.startsWith("AT+RXLEVEL=")) {
+        if (!stream) return "ERR: streaming requires UART";
+        if (s_rxMonHandle) return "ERR: monitor already running";
+        int secs = cmd.substring(11).toInt();
+        if (secs <= 0 || secs > 300) return "ERR: seconds must be 1-300";
+        auto* p = new RxMonParams{ stream, (uint16_t)secs, false };
+        if (xTaskCreate(rxMonitorTask, "rxmon", 3072, p, 1, &s_rxMonHandle) != pdPASS) {
+            delete p;
+            return "ERR: task create failed";
+        }
+        return ""; // task writes directly; caller must not println this
+    }
+
+    if (cmd == "AT+RXSTATE?") {
+        uint8_t count = ModemGetDemodulatorCount();
+        bool is9600 = (ModemGetBaudrate() >= 9000.f);
+        String out;
+        for (uint8_t i = 0; i < count; i++) {
+            int8_t pk, vl; uint8_t lvl;
+            ModemGetSignalLevel(i, &pk, &vl, &lvl);
+            uint16_t ctr   = ModemGetDcdCounter(i);
+            uint16_t thres = ModemGetDcdThres(i);
+            uint8_t  dcd   = ModemGetDemodDcd(i);
+            if (i > 0) out += " | ";
+            char buf[72];
+            if (is9600) {
+                snprintf(buf, sizeof(buf), "D%u:lvl=%u%%,ctr=%u/%u,dcd=%s",
+                         i, lvl, ctr, thres, dcd ? "ON" : "OFF");
+            } else {
+                int32_t disc = ModemGetToneDiscriminator(i);
+                const char* tone = (disc > 0) ? "MARK" : (disc < 0) ? "SPCE" : "IDLE";
+                snprintf(buf, sizeof(buf), "D%u:lvl=%u%%,%s(%+ld),ctr=%u/%u,dcd=%s",
+                         i, lvl, tone, (long)disc, ctr, thres, dcd ? "ON" : "OFF");
+            }
+            out += buf;
+        }
+        return out;
+    }
+
+    if (cmd.startsWith("AT+RXSTATE=")) {
+        if (!stream) return "ERR: streaming requires UART";
+        if (s_rxMonHandle) return "ERR: monitor already running";
+        int secs = cmd.substring(11).toInt();
+        if (secs <= 0 || secs > 300) return "ERR: seconds must be 1-300";
+        auto* p = new RxMonParams{ stream, (uint16_t)secs, true };
+        if (xTaskCreate(rxMonitorTask, "rxmon", 3072, p, 1, &s_rxMonHandle) != pdPASS) {
+            delete p;
+            return "ERR: task create failed";
+        }
+        return ""; // task writes directly; caller must not println this
     }
 
     // Time commands

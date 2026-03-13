@@ -71,6 +71,35 @@ enum ModemPrefilter
 void ModemGetSignalLevel(uint8_t modem, int8_t *peak, int8_t *valley, uint8_t *level);
 
 /**
+ * @brief Get tone discriminator value (mark-vs-space correlator output, pre-LPF)
+ * @param modem Modem number
+ * @return Positive = mark dominant, negative = space dominant, magnitude = confidence.
+ *         Always 0 for 9600 Bd (no correlator).
+ */
+int32_t ModemGetToneDiscriminator(uint8_t modem);
+
+/**
+ * @brief Get DCD pulse counter for a demodulator
+ * @param modem Modem number
+ * @return Current DCD counter value (compare with ModemGetDcdThres / ModemGetDcdMax)
+ */
+uint16_t ModemGetDcdCounter(uint8_t modem);
+
+/**
+ * @brief Get DCD lock threshold for a demodulator
+ * @param modem Modem number
+ * @return Counter value at which DCD is declared
+ */
+uint16_t ModemGetDcdThres(uint8_t modem);
+
+/**
+ * @brief Get per-demodulator DCD state
+ * @param modem Modem number
+ * @return 1 if this demodulator has DCD, 0 otherwise
+ */
+uint8_t ModemGetDemodDcd(uint8_t modem);
+
+/**
  * @brief Get current modem baudrate
  * @return Baudrate
  */

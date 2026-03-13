@@ -279,14 +279,14 @@ void taskSerial(void *pvParameters)
             // silently discarded to prevent heap exhaustion from runaway input.
             static constexpr size_t AT_CMD_MAX_LEN = 256;
 
-            auto processATChar = [](String &buf, char ch) -> String {
+            auto processATChar = [](String &buf, char ch, Print* stream) -> String {
                 if (ch == '\n' || ch == '\r')
                 {
                     String cmd = buf;
                     buf.clear();
                     cmd.trim();
                     if (cmd.length() == 0) return "";
-                    String ret = handleATCommand(cmd);
+                    String ret = handleATCommand(cmd, stream);
                     log_d("AT-Command response: %s", ret.c_str());
                     return ret;
                 }
@@ -308,14 +308,14 @@ void taskSerial(void *pvParameters)
             if (config.at_cmd_uart == 1)
             { // UART0
                 while (Serial0.available()) {
-                    String ret = processATChar(atBuf0, (char)Serial0.read());
+                    String ret = processATChar(atBuf0, (char)Serial0.read(), &Serial0);
                     if (ret != "") Serial0.println(ret);
                 }
             }
             else if (config.at_cmd_uart == 2)
             { // UART1
                 while (Serial1.available()) {
-                    String ret = processATChar(atBuf1, (char)Serial1.read());
+                    String ret = processATChar(atBuf1, (char)Serial1.read(), &Serial1);
                     if (ret != "") Serial1.println(ret);
                 }
             }
@@ -323,7 +323,7 @@ void taskSerial(void *pvParameters)
             else if (config.at_cmd_uart == 3)
             { // UART2
                 while (Serial2.available()) {
-                    String ret = processATChar(atBuf2, (char)Serial2.read());
+                    String ret = processATChar(atBuf2, (char)Serial2.read(), &Serial2);
                     if (ret != "") Serial2.println(ret);
                 }
             }
@@ -331,7 +331,7 @@ void taskSerial(void *pvParameters)
             else if (config.at_cmd_uart == 4)
             { // USB-CDC
                 while (Serial.available()) {
-                    String ret = processATChar(atBuf3, (char)Serial.read());
+                    String ret = processATChar(atBuf3, (char)Serial.read(), &Serial);
                     if (ret != "") Serial.println(ret);
                 }
             }

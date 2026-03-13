@@ -4,5 +4,5 @@
 #include <time.h>
 #include <TimeLib.h>
 
-String handleATCommand(String cmd);
+String handleATCommand(String cmd, Print* stream = nullptr);
 #endif
